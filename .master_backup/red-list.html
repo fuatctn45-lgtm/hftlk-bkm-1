@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RED Verilen Bakımlar V5.4.36</title>
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="dns-prefetch" href="https://script.google.com">
+<link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
+<link rel="dns-prefetch" href="https://drive.google.com">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="mobil-tasma-duzeltme.css">
+<style>
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+@media(max-width:600px){.filters{grid-template-columns:1fr;gap:0}}
+.ozet{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 16px}
+.ozet-kutu{flex:1 1 130px;padding:12px 14px;border-radius:12px;background:#f6f9fc;border:1px solid #dce5ef}
+.ozet-kutu b{display:block;font-size:22px;color:#0f2d4d;line-height:1.2}
+.ozet-kutu small{color:#64748b;font-size:12px}
+.ozet-kutu.red{background:#fff1f1;border-color:#ffc9c9}
+.ozet-kutu.red b{color:#b11f2e}
+.red-card{display:block;width:100%;max-width:100%;background:#fff;border:1px solid #dce5ef;border-left:6px solid #FF9999;border-radius:12px;padding:14px 16px;margin:11px 0;text-align:left}
+.red-ust{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.red-rozet{display:grid;place-items:center;min-width:52px;height:28px;padding:0 10px;border-radius:8px;background:#FF9999;color:#7a1414;font-weight:900;font-size:12px;letter-spacing:.5px;flex:none}
+.red-baslik{flex:1 1 auto;min-width:0}
+.red-baslik b{display:block;font-size:16px;color:#0f2d4d;line-height:1.3;overflow-wrap:anywhere}
+.red-baslik small{display:block;color:#64748b;font-size:13px;overflow-wrap:anywhere}
+.red-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.etiket{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;background:#eef3f9;color:#334155;font-size:12px;font-weight:700}
+.etiket svg{width:13px;height:13px;fill:currentColor}
+.red-aciklama{margin-top:11px;padding:12px 14px;background:#fff7e6;border:1px solid #ffd591;border-radius:10px;font-size:14px;color:#5c3a00;line-height:1.5;overflow-wrap:anywhere}
+.red-aciklama .baslik{display:block;font-size:11px;font-weight:800;letter-spacing:.6px;color:#8a6100;margin-bottom:4px;text-transform:uppercase}
+.red-aciklama.bos{background:#f6f9fc;border-color:#dce5ef;color:#94a3b8;font-style:italic}
+.red-foto-alan{margin-top:11px}
+.red-foto{width:100%;max-width:240px;height:auto;border:1px solid #dce5ef;border-radius:10px;cursor:zoom-in;display:block}
+.red-foto-yok{font-size:12px;color:#94a3b8;font-style:italic}
+.foto-modal{position:fixed;inset:0;z-index:13000;display:flex;align-items:center;justify-content:center;padding:16px;background:#050d16f2}
+.foto-modal-card{width:min(680px,100%);max-width:calc(100vw - 24px);max-height:92vh;display:flex;flex-direction:column;gap:10px}
+.foto-modal-card img{width:100%;max-height:74vh;object-fit:contain;border-radius:12px;background:#0b1626}
+.foto-modal-card p{color:#cbd8e6;font-size:13px;margin:0;text-align:center;overflow-wrap:anywhere}
+.foto-modal-card button{margin:0}
+/* V5.4.36 Giderildi düğmesi */
+.gider-btn{margin:12px 0 0 !important;background:#167a42 !important;font-weight:900}
+.gider-btn:hover{background:#0f6636 !important}
+</style>
+</head>
+<body>
+<header class="op-header">
+  <div class="op-identity"><img src="AKGLOG.png" alt="AKG"><strong>RED Verilen Bakımlar</strong></div>
+  <nav class="op-menu">
+    <button id="homeBtn" class="icon-button" type="button" title="Ana Menü" aria-label="Ana Menü"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H4.5A1.5 1.5 0 0 1 3 19.5z"/></svg></button>
+    <button id="exitBtn" class="icon-button exit-button" type="button" title="Çıkış" aria-label="Çıkış"><svg viewBox="0 0 24 24"><path d="M10 4H5v16h5v-2H7V6h3zm8.6 7-3.3-3.3 1.4-1.4L22.4 12l-5.7 5.7-1.4-1.4 3.3-3.3H10v-2z"/></svg></button>
+  </nav>
+</header>
+
+<main>
+<section class="card">
+  <h1>RED Verilen Bakımlar</h1>
+  <p class="muted">Operatörlerin uygun bulmadığı bakımlar, açıklamaları ve kanıt fotoğraflarıyla birlikte listelenir.</p>
+
+  <div class="filters">
+    <div>
+      <label for="haftaSec">Dönem</label>
+      <select id="haftaSec">
+        <option value="bu">Bu hafta</option>
+        <option value="gecen">Geçen hafta</option>
+        <option value="tum">Tüm kayıtlar</option>
+      </select>
+    </div>
+    <div>
+      <label for="makineSec">Makine</label>
+      <select id="makineSec"><option value="">Tüm makineler</option></select>
+    </div>
+  </div>
+
+  <input id="ara" placeholder="Bakım, açıklama veya operatör ara">
+
+  <div class="ozet">
+    <div class="ozet-kutu red"><b id="sayiRed">0</b><small>RED verilen bakım</small></div>
+    <div class="ozet-kutu"><b id="sayiMakine">0</b><small>Etkilenen makine</small></div>
+    <div class="ozet-kutu"><b id="sayiFoto">0</b><small>Fotoğraflı kayıt</small></div>
+  </div>
+
+  <button id="yenileBtn" class="secondary">Listeyi Yenile</button>
+
+  <div id="liste"></div>
+  <div id="msg"></div>
+</section>
+</main>
+
+<div id="fotoModal" class="foto-modal hide">
+  <div class="foto-modal-card">
+    <img id="fotoBuyuk" alt="Kanıt fotoğrafı">
+    <p id="fotoBilgi"></p>
+    <button id="fotoKapat" class="secondary" type="button">Kapat</button>
+  </div>
+</div>
+
+<div id="loader" class="overlay"><div class="modal"><img src="AKGLOG.png" alt="AKG"><h2 id="loadTitle">RED kayıtları yükleniyor</h2><p id="loadText">Hazırlanıyor...</p><div class="track"><div id="bar"></div></div><b id="percent">0%</b><button id="retryBtn" class="hide">Tekrar Dene</button></div></div>
+
+<script src="net.js"></script>
+<script>
+'use strict';
+/* RED Verilen Bakımlar Ekranı V5.4.36
+   V5.4.36: "Giderildi" düğmesi. Basınca E-Tabloda G sütunu RED -> UYGUN olur (Code.gs: redtouygun). */
+const SESSION = CMMS.SESSION, $ = id => document.getElementById(id);
+let tumKayitlar = [], makineAdlari = {};
+
+function esc(v){ return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function guard(){
+  const raw = sessionStorage.getItem(SESSION);
+  if(!raw){ location.replace('index.html'); return false; }
+  return true;
+}
+function yukleme(p, t){
+  $('loader').classList.remove('hide');
+  $('bar').style.width = p + '%';
+  $('percent').textContent = p + '%';
+  $('loadText').textContent = t;
+}
+
+/* ---------- Hafta yardımcıları ---------- */
+function haftaAnahtari(tarih){ return CMMS.weekKey(tarih); }
+function gecenHafta(){
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  return haftaAnahtari(d);
+}
+function tarihCevir(v){
+  if(v instanceof Date) return v;
+  const raw = String(v||'').trim();
+  if(!raw) return new Date(NaN);
+  const m = raw.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m) return new Date(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+  return new Date(raw);
+}
+function haftaNormalle(weekKey, createdAt){
+  const raw = String(weekKey||'').trim();
+  if(/^\d{4}-W\d{2}$/i.test(raw)) return raw.toUpperCase();
+  if(raw){
+    const d = tarihCevir(raw);
+    if(!isNaN(d.getTime())) return haftaAnahtari(d);
+  }
+  const c = tarihCevir(createdAt);
+  if(!isNaN(c.getTime())) return haftaAnahtari(c);
+  return '';
+}
+function tarihYaz(v){
+  const d = tarihCevir(v);
+  if(isNaN(d.getTime())) return String(v||'-');
+  const iki = n => String(n).padStart(2,'0');
+  return iki(d.getDate())+'.'+iki(d.getMonth()+1)+'.'+d.getFullYear()+' '+iki(d.getHours())+':'+iki(d.getMinutes());
+}
+
+/* ---------- Veri yükleme ---------- */
+async function yukle(force){
+  $('retryBtn').classList.add('hide');
+  yukleme(25, 'Makine listesi alınıyor...');
+  try{
+    const [mRes, rRes] = await Promise.allSettled([
+      force ? CMMS.call('listMachinesCached')
+            : CMMS.cachedCall('listMachinesCached', {}, { ttl: 900000 }),
+      CMMS.call('listMaintenanceRecords', {}, { timeout: 20000 })
+    ]);
+
+    if(mRes.status === 'fulfilled' && mRes.value && mRes.value.success){
+      (mRes.value.machines||[]).forEach(m => { makineAdlari[m.id] = m.machineName; });
+    }
+
+    yukleme(75, 'Kontrol kayıtları işleniyor...');
+
+    if(rRes.status === 'rejected') throw rRes.reason;
+    const r = rRes.value;
+    if(!r || !r.success) throw Error((r && r.message) || 'Kayıtlar alınamadı.');
+
+    tumKayitlar = (r.records || [])
+      .filter(x => String(x.result||'').toLocaleUpperCase('tr').indexOf('RED') > -1)
+      .map(x => ({
+        recordId: x.recordId || '',
+        machineId: x.machineId || '',
+        machineName: x.machineName || makineAdlari[x.machineId] || x.machineId || '-',
+        operator: x.operator || '-',
+        aciklama: String(x.description || '').trim(),
+        foto: x.proofImageUrl || '',
+        hafta: haftaNormalle(x.weekKey, x.createdAt),
+        createdAt: x.createdAt || '',
+        zaman: tarihCevir(x.createdAt).getTime() || 0
+      }))
+      .sort((a,b) => b.zaman - a.zaman);
+
+    makineSecDoldur();
+    yukleme(100, 'Hazır.');
+    $('loader').classList.add('hide');
+    ciz();
+
+  }catch(e){
+    $('loadText').textContent = e.message;
+    $('retryBtn').classList.remove('hide');
+  }
+}
+
+function makineSecDoldur(){
+  const adlar = [...new Set(tumKayitlar.map(x => x.machineName))].sort((a,b)=>a.localeCompare(b,'tr'));
+  $('makineSec').innerHTML = '<option value="">Tüm makineler</option>' +
+    adlar.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+}
+
+/* ---------- Filtreleme ve çizim ---------- */
+function filtrele(){
+  const donem = $('haftaSec').value;
+  const makine = $('makineSec').value;
+  const q = $('ara').value.trim().toLocaleLowerCase('tr');
+  const buH = haftaAnahtari(new Date());
+  const gecH = gecenHafta();
+
+  return tumKayitlar.filter(x => {
+    if(donem === 'bu' && x.hafta !== buH) return false;
+    if(donem === 'gecen' && x.hafta !== gecH) return false;
+    if(makine && x.machineName !== makine) return false;
+    if(q){
+      const havuz = (x.machineName + ' ' + x.aciklama + ' ' + x.operator).toLocaleLowerCase('tr');
+      if(havuz.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+}
+
+function ciz(){
+  const liste = filtrele();
+  $('sayiRed').textContent = liste.length;
+  $('sayiMakine').textContent = new Set(liste.map(x => x.machineName)).size;
+  $('sayiFoto').textContent = liste.filter(x => x.foto).length;
+
+  if(!liste.length){
+    $('liste').innerHTML = '<div class="empty-state">Seçilen dönemde RED verilen bakım yok.</div>';
+    return;
+  }
+
+  $('liste').innerHTML = liste.map(x => {
+    const aciklama = x.aciklama
+      ? `<div class="red-aciklama"><span class="baslik">Operatör Açıklaması</span>${esc(x.aciklama)}</div>`
+      : `<div class="red-aciklama bos"><span class="baslik">Operatör Açıklaması</span>Açıklama girilmemiş (eski kayıt).</div>`;
+
+    const foto = x.foto
+      ? `<div class="red-foto-alan"><img class="red-foto" loading="lazy" decoding="async" src="${esc(x.foto)}" alt="Kanıt fotoğrafı" data-src="${esc(x.foto)}" data-bilgi="${esc(x.machineName + ' | ' + x.operator + ' | ' + tarihYaz(x.createdAt))}"></div>`
+      : `<div class="red-foto-alan"><span class="red-foto-yok">Kanıt fotoğrafı yok.</span></div>`;
+
+    return `<article class="red-card">
+      <div class="red-ust">
+        <span class="red-rozet">RED</span>
+        <span class="red-baslik">
+          <b>${esc(x.machineName)}</b>
+          <small>${esc(x.recordId)}</small>
+        </span>
+      </div>
+      <div class="red-meta">
+        <span class="etiket"><svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5m0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5"/></svg>${esc(x.operator)}</span>
+        <span class="etiket"><svg viewBox="0 0 24 24"><path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2zm12 8v10H5V10z"/></svg>${esc(tarihYaz(x.createdAt))}</span>
+        <span class="etiket">${esc(x.hafta || '-')}</span>
+      </div>
+      ${aciklama}
+      ${foto}
+      <button class="gider-btn" type="button" data-id="${esc(x.recordId)}">✔ Giderildi</button>
+    </article>`;
+  }).join('');
+
+  document.querySelectorAll('.gider-btn').forEach(b => b.onclick = () => giderildi(b));
+  document.querySelectorAll('.red-foto').forEach(img => {
+    img.onclick = () => {
+      $('fotoBuyuk').src = img.dataset.src;
+      $('fotoBilgi').textContent = img.dataset.bilgi;
+      $('fotoModal').classList.remove('hide');
+    };
+  });
+}
+
+/* ---------- V5.4.36 Giderildi: G sütunu RED -> UYGUN ---------- */
+async function giderildi(btn){
+  const id = btn.dataset.id;
+  const x = tumKayitlar.find(k => k.recordId === id);
+  if(!confirm((x ? x.machineName + '\n' : '') + id + '\n\nArıza giderildi mi? Kayıt RED yerine UYGUN olarak işaretlenecek.')) return;
+  btn.disabled = true; btn.textContent = 'Kaydediliyor...';
+  try{
+    const r = await CMMS.call('redToUygun', { recordId: id }, { retries: 0, timeout: 20000 });
+    if(!r || !r.success) throw new Error((r && r.message) || 'İşlem başarısız.');
+    tumKayitlar = tumKayitlar.filter(k => k.recordId !== id);
+    CMMS.cacheClear();
+    makineSecDoldur();
+    ciz();
+    $('msg').textContent = '✔ ' + id + ' UYGUN olarak işaretlendi.';
+    $('msg').className = 'success';
+  }catch(e){
+    btn.disabled = false; btn.textContent = '✔ Giderildi';
+    alert('Kaydedilemedi: ' + e.message);
+  }
+}
+
+/* ---------- Olaylar ---------- */
+$('haftaSec').onchange = ciz;
+$('makineSec').onchange = ciz;
+$('ara').oninput = ciz;
+$('yenileBtn').onclick = () => { CMMS.cacheClear(); yukle(true); };
+$('retryBtn').onclick = () => yukle(true);
+$('fotoKapat').onclick = () => { $('fotoModal').classList.add('hide'); $('fotoBuyuk').removeAttribute('src'); };
+$('fotoModal').onclick = e => { if(e.target === $('fotoModal')) $('fotoKapat').click(); };
+$('homeBtn').onclick = () => location.replace('index.html?screen=home');
+$('exitBtn').onclick = () => {
+  if(!confirm('Sistemden çıkmak istiyor musunuz?')) return;
+  sessionStorage.removeItem(SESSION); CMMS.cacheClear(); location.replace('index.html');
+};
+
+if(guard()){ CMMS.warmUp(); yukle(); }
+</script>
+</body></html>

@@ -1,0 +1,1028 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OP Paneli V5.4.34</title>
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="dns-prefetch" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
+<link rel="dns-prefetch" href="https://unpkg.com">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="mobil-tasma-duzeltme.css">
+<style>
+/* ===== Makine kartı ve durum barı ===== */
+.machine-card{display:block;width:100%;max-width:100%;text-align:left;background:#fff;color:#172033;border:1px solid #dce5ef;border-radius:12px;padding:14px 16px;margin:10px 0;cursor:pointer;font:inherit}
+.machine-card:hover{border-color:#0f4c81;box-shadow:0 4px 14px #0f172a18}
+.machine-card .mc-name{display:block;font-size:17px;font-weight:800;color:#0f2d4d;margin-bottom:10px;line-height:1.25;overflow-wrap:anywhere;min-width:0}
+.step-bar{display:flex;flex-wrap:wrap;gap:6px;max-width:100%}
+.step{display:grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:9px;font-weight:900;font-size:15px;color:#1b2430;border:1px solid #00000022;line-height:1;flex:0 0 auto}
+.step.bekleyen{background:#FFB733}
+.step.tamamlanan{background:#99FF99}
+.step.red{background:#FF9999}
+.step-legend{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:4px 0 14px;font-size:13px;color:#475569}
+.step-legend span{display:flex;align-items:center;gap:6px}
+.step-legend i{width:16px;height:16px;border-radius:5px;border:1px solid #00000022;display:inline-block;flex:none}
+.mc-progress{display:block;margin-top:9px;font-size:12px;color:#64748b;font-weight:700;overflow-wrap:anywhere}
+#taskList .listBtn{display:flex;align-items:flex-start;gap:12px;width:100%;max-width:100%;text-align:left}
+.task-no{display:grid;place-items:center;min-width:34px;height:34px;border-radius:9px;font-weight:900;color:#1b2430;border:1px solid #00000022;flex:0 0 auto;margin-top:2px}
+.task-no.bekleyen{background:#FFB733}
+.task-no.tamamlanan{background:#99FF99}
+.task-no.red{background:#FF9999}
+.task-text{display:flex;flex-direction:column;gap:3px;flex:1 1 auto;min-width:0;text-align:left}
+.task-text b{font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.task-text small{color:#64748b;line-height:1.3;overflow-wrap:anywhere}
+
+/* ===== V5.4.30 Birim kart renkleri ===== */
+#taskList .listBtn.birim-elektrik{background:#FFFF66}
+#taskList .listBtn.birim-mekanik{background:#66FFFF}
+#taskList .listBtn.birim-dis{background:#D6C1A6}
+#taskList .listBtn.birim-isg{background:#FF5B3A}
+#taskList .listBtn[class*="birim-"]{border-color:#00000026}
+#taskList .listBtn[class*="birim-"]:hover{filter:brightness(.95)}
+#taskList .listBtn[class*="birim-"] .task-text b{color:#111827}
+#taskList .listBtn[class*="birim-"] .task-text small{color:#1f2937}
+#taskList .listBtn.birim-isg .task-text b,
+#taskList .listBtn.birim-isg .task-text small{color:#fff}
+/* Durum kutusu renkli zeminde net görünsün */
+#taskList .listBtn[class*="birim-"] .task-no{border:2px solid #111827;box-shadow:0 1px 0 #ffffff99}
+.birim-etk{display:inline-block;margin-top:4px;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:800;
+  background:#ffffffcc;color:#111827;border:1px solid #00000026;width:max-content}
+.birim-lejant{display:flex;flex-wrap:wrap;gap:12px;margin:2px 0 10px;font-size:12px;color:#475569;font-weight:600}
+.birim-lejant span{display:flex;align-items:center;gap:6px}
+.birim-lejant i{width:14px;height:14px;border-radius:4px;border:1px solid #00000026;display:inline-block}
+
+/* ===== V5.4.31 Kontrol ekranı bakım bilgi kartı ===== */
+.bakim-kart{margin:10px 0 14px;padding:14px 16px;border-radius:12px;border:1px solid #dce5ef;background:#f8fafc}
+.bakim-kart.birim-elektrik{background:#FFFF66;border-color:#00000026}
+.bakim-kart.birim-mekanik{background:#66FFFF;border-color:#00000026}
+.bakim-kart.birim-dis{background:#D6C1A6;border-color:#00000026}
+.bakim-kart.birim-isg{background:#FF5B3A;border-color:#00000026;color:#fff}
+.bakim-kart .bk-baslik{display:block;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;opacity:.75}
+.bakim-kart .bk-metin{display:block;margin:3px 0 10px;font-size:17px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
+.bakim-kart .bk-satir{display:flex;flex-wrap:wrap;gap:8px}
+.bk-etk{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;font-size:13px;font-weight:800;
+  background:#ffffffd9;color:#111827;border:1px solid #00000026}
+.bk-etk svg{width:15px;height:15px;fill:currentColor}
+.bk-etk.foto-zorunlu{background:#b11f2e;color:#fff;border-color:#b11f2e}
+.bk-etk.foto-istege{background:#ffffffd9;color:#475569}
+.bk-istenen{margin-top:10px;font-size:14px}
+.bk-istenen b{font-weight:800}
+#proofLabel{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#proofZorunlu{display:none;padding:2px 9px;border-radius:99px;background:#b11f2e;color:#fff;font-size:11px;font-weight:900;letter-spacing:.4px}
+#proofZorunlu.goster{display:inline-block}
+#proof.eksik{border-color:#b11f2e;box-shadow:0 0 0 3px #b11f2e22}
+/* ===== V5.4.32 Fotoğraf çekme alanı ===== */
+#proof{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.foto-alan{margin:8px 0 12px;padding:14px;border-radius:14px;border:2px dashed #cbd5e1;background:#f8fafc}
+.foto-alan.zorunlu{border:2px solid #b11f2e;background:#fff1f1}
+.foto-alan.tamam{border:2px solid #167a42;background:#effaf3}
+.foto-alan.eksik{animation:titre .4s ease 2}
+@keyframes titre{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.foto-uyari{display:none;align-items:center;gap:12px;margin-bottom:12px;color:#7a1414}
+.foto-alan.zorunlu .foto-uyari{display:flex}
+.foto-uyari .ikon{width:48px;height:48px;border-radius:50%;background:#b11f2e;display:grid;place-items:center;flex:none}
+.foto-uyari .ikon svg{width:26px;height:26px;fill:#fff}
+.foto-uyari b{display:block;font-size:16px;font-weight:900}
+.foto-uyari small{display:block;font-size:13px;line-height:1.35}
+.foto-cek-btn{display:flex !important;align-items:center;justify-content:center;gap:10px;width:100%;margin:0 !important;
+  padding:16px !important;font-size:18px !important;font-weight:900;border-radius:12px;background:#0f4c81}
+.foto-alan.zorunlu .foto-cek-btn{background:#b11f2e}
+.foto-alan.zorunlu .foto-cek-btn:hover{background:#8f1824}
+.foto-cek-btn svg{width:28px;height:28px;fill:#fff;flex:none}
+.foto-onizleme{display:none;align-items:center;gap:12px;margin-top:12px}
+.foto-alan.tamam .foto-onizleme{display:flex}
+.foto-onizleme img{width:96px;height:96px;object-fit:cover;border-radius:10px;border:2px solid #167a42;flex:none}
+.foto-onizleme .bilgi{flex:1 1 auto;min-width:0;color:#167a42;font-weight:800;font-size:14px}
+.foto-onizleme .bilgi small{display:block;color:#475569;font-weight:600;font-size:12px;overflow-wrap:anywhere}
+.foto-alan.tamam .foto-cek-btn{background:#475569;font-size:15px !important;padding:11px !important}
+.foto-alan.tamam .foto-cek-btn svg{width:22px;height:22px}
+#save.kilitli{background:#94a3b8 !important;cursor:not-allowed;opacity:1}
+.foto-gerekli{display:inline-flex;align-items:center;gap:5px;margin-top:4px;margin-left:6px;padding:3px 10px;border-radius:99px;
+  background:#b11f2e;color:#fff;font-size:11px;font-weight:900;width:max-content}
+.foto-gerekli svg{width:13px;height:13px;fill:#fff}
+.etk-satir{display:flex;flex-wrap:wrap;align-items:center}
+
+/* ===== V5.4.33 Referans resim standart çerçeve ===== */
+.ref-cerceve{position:relative;width:100%;aspect-ratio:4 / 3;max-height:420px;margin:10px 0 12px;
+  border:1px solid #dce5ef;border-radius:14px;background:#0b1626;overflow:hidden;cursor:zoom-in}
+.ref-cerceve img#ref{position:absolute !important;inset:0;width:100% !important;height:100% !important;max-width:none !important;
+  margin:0 !important;border:0 !important;border-radius:0 !important;object-fit:contain !important;display:block}
+.ref-cerceve .ref-ipucu{position:absolute;right:10px;bottom:10px;padding:5px 10px;border-radius:99px;
+  background:#000000a6;color:#fff;font-size:12px;font-weight:700;pointer-events:none}
+.ref-cerceve.bos{display:grid;place-items:center;cursor:default;background:#f4f7fb;border-style:dashed}
+.ref-cerceve.bos::after{content:"Referans resim yok";color:#94a3b8;font-size:14px;font-weight:600}
+.ref-cerceve.bos .ref-ipucu{display:none}
+.ref-modal{position:fixed;inset:0;z-index:13000;display:flex;align-items:center;justify-content:center;padding:14px;background:#050d16f2}
+.ref-modal img{max-width:100%;max-height:82vh;object-fit:contain;border-radius:10px;background:#0b1626}
+.ref-modal-kart{display:flex;flex-direction:column;gap:10px;width:min(900px,100%);align-items:center}
+.ref-modal-kart button{margin:0;width:100%}
+@media(max-width:600px){.ref-cerceve{max-height:300px}}
+
+/* ===== RED açıklama zorunluluğu ===== */
+#descLabel{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#descZorunlu{display:none;padding:2px 9px;border-radius:99px;background:#FF9999;color:#7a1414;font-size:11px;font-weight:900;letter-spacing:.4px}
+#descZorunlu.goster{display:inline-block}
+#desc.eksik{border-color:#b11f2e;box-shadow:0 0 0 3px #b11f2e22}
+.red-uyari{display:none;margin-top:8px;padding:11px 13px;background:#fff1f1;border:1px solid #ffc9c9;border-radius:10px;font-size:13px;color:#7a1414;line-height:1.45}
+.red-uyari.goster{display:block}
+.sayac{font-size:12px;color:#64748b;text-align:right;margin-top:-4px}
+/* ===== V5.4.34 Ölçülen değer ===== */
+.olcum-alan{margin:6px 0 10px;padding:14px;border-radius:12px;border:2px solid #0f4c81;background:#eef4ff}
+.olcum-alan label{margin-top:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:#0f2d4d;font-weight:800}
+.olcum-alan .zorunlu-etk{padding:2px 9px;border-radius:99px;background:#0f4c81;color:#fff;font-size:11px;font-weight:900}
+.olcum-hedef{font-size:13px;color:#334155;margin:4px 0 2px}
+.olcum-hedef b{color:#0f2d4d}
+#measured{font-size:18px;font-weight:700}
+#measured.eksik{border-color:#b11f2e;box-shadow:0 0 0 3px #b11f2e22}
+.olcum-alan.eksik{border-color:#b11f2e;background:#fff1f1}
+/* ===== V5.4.28 Yönetici QR atlama bilgisi ===== */
+.admin-bilgi{display:flex;align-items:center;gap:8px;margin:4px 0 10px;padding:9px 12px;border-radius:10px;
+  background:#eef4ff;border:1px solid #c7d8f5;color:#0f4c81;font-size:13px;font-weight:700}
+.admin-bilgi svg{width:18px;height:18px;fill:#0f4c81;flex:none}
+
+/* ===== QR kamera alanı ===== */
+#reader{width:100%;max-width:420px;min-height:260px;margin:12px auto;background:#0b1626;border-radius:14px;overflow:hidden;display:grid;place-items:center}
+#reader video{width:100%!important;height:auto!important;display:block;object-fit:cover}
+#reader canvas{max-width:100%}
+#reader:empty::before{content:"Kamera kapalı";color:#7c93ad;font-size:14px}
+.qr-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.qr-actions button{width:auto;flex:1 1 150px;margin:0}
+.qr-state{font-weight:700;margin:6px 0;overflow-wrap:anywhere}
+.qr-state.ok{color:#167a42}
+.qr-state.err{color:#c62828}
+
+/* ===== QR uyarı modalı ===== */
+.qr-modal{position:fixed;inset:0;z-index:12000;display:flex;align-items:center;justify-content:center;padding:18px;background:#081728e0}
+.qr-modal-card{width:min(430px,100%);max-width:calc(100vw - 28px);max-height:88vh;overflow-y:auto;background:#fff;border-radius:20px;padding:26px 22px;text-align:center;box-shadow:0 24px 60px #00000055}
+.qr-modal-icon{display:grid;place-items:center;width:78px;height:78px;margin:0 auto 14px;border-radius:50%;font-size:40px;font-weight:900;line-height:1}
+.qr-modal-icon.err{background:#FF9999;color:#7a1414}
+.qr-modal-icon.warn{background:#FFB733;color:#6b3b00}
+.qr-modal-card h2{margin:0 0 10px;font-size:21px;color:#12243a}
+.qr-modal-card p{margin:7px 0;color:#42536b;font-size:15px;line-height:1.45;overflow-wrap:anywhere}
+.qr-compare{margin:15px 0;text-align:left;background:#f4f7fb;border-radius:12px;padding:13px 15px;font-size:13px}
+.qr-compare div{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dashed #d3dde9}
+.qr-compare div:last-child{border-bottom:0}
+.qr-compare b{color:#0f2d4d;flex:none;min-width:0}
+.qr-compare span{color:#c62828;font-weight:800;text-align:right;overflow-wrap:anywhere;min-width:0}
+.qr-compare .ok-val{color:#167a42}
+.qr-modal-actions{display:grid;gap:9px;margin-top:6px}
+.qr-modal-actions button{margin:0;width:100%}
+.qr-help-list{text-align:left;margin:12px 0 0;padding:12px 14px;background:#fff7e6;border:1px solid #ffd591;border-radius:11px;font-size:13px;color:#7a4b00}
+.qr-help-list ul{margin:6px 0 0 18px;padding:0}
+.qr-help-list li{margin:4px 0;overflow-wrap:anywhere}
+@media(max-width:600px){.step,.task-no{min-width:31px;height:31px;font-size:14px}.machine-card .mc-name{font-size:16px}#reader{min-height:230px}.qr-modal-card{padding:22px 17px}}
+@media(max-width:380px){.step,.task-no{min-width:28px;height:28px;font-size:13px}}
+</style>
+</head>
+<body>
+<header class="op-header"><div class="op-identity"><img src="AKGLOG.png" alt="AKG"><strong id="headerOperator">OPERATÖR</strong></div><nav class="op-menu"><button id="mainMenuBtn" class="icon-button" type="button" title="Ana Menü" aria-label="Ana Menü"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H4.5A1.5 1.5 0 0 1 3 19.5z"/></svg></button><button id="exitBtn" class="icon-button exit-button" type="button" title="Çıkış" aria-label="Çıkış"><svg viewBox="0 0 24 24"><path d="M10 4H5v16h5v-2H7V6h3zm8.6 7-3.3-3.3 1.4-1.4L22.4 12l-5.7 5.7-1.4-1.4 3.3-3.3H10v-2z"/></svg></button></nav></header>
+<main>
+<section id="machines" class="card">
+  <h1>Bakımı Yapılacak Makineler</h1>
+  <input id="search" placeholder="Makine adı ile ara">
+  <div class="step-legend">
+    <span><i style="background:#FFB733"></i>Bekleyen</span>
+    <span><i style="background:#99FF99"></i>Tamamlanan</span>
+    <span><i style="background:#FF9999"></i>Red</span>
+  </div>
+  <div id="machineList"></div>
+  <div id="msg"></div>
+</section>
+
+<section id="qr" class="card hide">
+  <button onclick="leaveQr()">← Geri</button>
+  <h2 id="qrName"></h2>
+  <p class="muted">Makine üzerindeki QR etiketini kameraya okutun.</p>
+  <div id="reader"></div>
+  <div class="qr-actions">
+    <button id="camStart" type="button">Kamerayı Başlat</button>
+    <button id="camSwitch" class="secondary hide" type="button">Kamerayı Değiştir</button>
+    <button id="camStop" class="secondary hide" type="button">Kamerayı Durdur</button>
+  </div>
+  <div id="qrState" class="qr-state"></div>
+</section>
+
+<section id="tasks" class="card hide"><button onclick="step('machines')">← Makineler</button><h2 id="taskName"></h2>
+  <div id="adminBilgi" class="admin-bilgi hide"><svg viewBox="0 0 24 24"><path d="M12 1 3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5zm-1 15-4-4 1.4-1.4L11 13.2l5.6-5.6L18 9z"/></svg>Yönetici girişi: QR doğrulaması atlandı.</div>
+  <div class="birim-lejant">
+    <span><i style="background:#FFFF66"></i>Elektrik</span>
+    <span><i style="background:#66FFFF"></i>Mekanik</span>
+    <span><i style="background:#D6C1A6"></i>Dış Servis</span>
+    <span><i style="background:#FF5B3A"></i>İş Güvenliği</span>
+  </div>
+  <div id="taskList"></div></section>
+
+<section id="control" class="card hide">
+  <button onclick="step('tasks')">← Bakımlar</button>
+  <h2 id="controlName"></h2>
+  <!-- V5.4.33: Standart boyutlu referans resim çerçevesi -->
+  <div id="refCerceve" class="ref-cerceve bos">
+    <img id="ref" class="hide" decoding="async" alt="Referans resim">
+    <span class="ref-ipucu">🔍 Büyütmek için dokunun</span>
+  </div>
+  <!-- V5.4.31: Bakım açıklaması, birim ve fotoğraf bilgisi resmin altında -->
+  <div id="bakimKart" class="bakim-kart">
+    <span class="bk-baslik">Yapılacak Bakım</span>
+    <span id="bkMetin" class="bk-metin"></span>
+    <div class="bk-satir">
+      <span id="bkBirim" class="bk-etk"></span>
+      <span id="bkFoto" class="bk-etk"></span>
+    </div>
+    <div class="bk-istenen"><b>İstenen:</b> <span id="target"></span></div>
+  </div>
+  <!-- V5.4.34: İstenen değer varsa ölçülen değer zorunlu -->
+  <div id="olcumAlan" class="olcum-alan hide">
+    <label for="measured">Ölçülen Değer / Tespit <span class="zorunlu-etk">ZORUNLU</span></label>
+    <div class="olcum-hedef">İstenen: <b id="olcumHedef"></b></div>
+    <input id="measured" type="text" autocomplete="off" placeholder="Ölçtüğünüz değeri veya tespitinizi yazın (ör. 12 bar)">
+  </div>
+  <label for="result">Sonuç</label>
+  <select id="result">
+    <option value="">Sonuç seçin</option>
+    <option>UYGUN</option>
+    <option>RED</option>
+  </select>
+  <label id="descLabel" for="desc">Açıklama <span id="descZorunlu">ZORUNLU</span></label>
+  <textarea id="desc" placeholder="Açıklama"></textarea>
+  <div id="descSayac" class="sayac"></div>
+  <div id="redUyari" class="red-uyari">
+    <b>RED verdiniz.</b> Arızanın ne olduğunu en az 10 karakterle açıklayın.
+    Bu açıklama üst menüdeki <b>RED Verilen Bakımlar</b> ekranında görüntülenecektir.
+  </div>
+  <label id="proofLabel" for="proof">Kanıt Fotoğrafı <span id="proofZorunlu">ZORUNLU</span></label>
+  <div id="fotoAlan" class="foto-alan">
+    <div class="foto-uyari">
+      <span class="ikon"><svg viewBox="0 0 24 24"><path d="M12 9a3.2 3.2 0 1 0 0 6.4A3.2 3.2 0 0 0 12 9m8-3h-3.2L15 4H9L7.2 6H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2"/></svg></span>
+      <span><b>Yönetici bu bakım için fotoğraf istiyor</b><small>Fotoğraf çekmeden kontrol kaydedilemez.</small></span>
+    </div>
+    <button id="fotoCekBtn" class="foto-cek-btn" type="button">
+      <svg viewBox="0 0 24 24"><path d="M12 9a3.2 3.2 0 1 0 0 6.4A3.2 3.2 0 0 0 12 9m8-3h-3.2L15 4H9L7.2 6H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2"/></svg>
+      <span id="fotoCekYazi">Fotoğraf Çek</span>
+    </button>
+    <div class="foto-onizleme">
+      <img id="fotoOnizleme" alt="Çekilen fotoğraf">
+      <div class="bilgi">✓ Fotoğraf eklendi<small id="fotoAd"></small></div>
+    </div>
+  </div>
+  <input id="proof" type="file" accept="image/*" capture="environment">
+  <button id="save">Kontrolü Kaydet</button>
+  <div id="saveMsg"></div>
+</section>
+</main>
+
+<div id="qrModal" class="qr-modal hide"><div class="qr-modal-card">
+  <div id="qrModalIcon" class="qr-modal-icon err">!</div>
+  <h2 id="qrModalTitle"></h2>
+  <div id="qrModalBody"></div>
+  <div class="qr-modal-actions">
+    <button id="qrModalRetry" type="button">Tekrar Okut</button>
+    <button id="qrModalBack" class="secondary" type="button">Makine Listesine Dön</button>
+  </div>
+</div></div>
+
+<div id="menuConfirm" class="confirm-overlay hide"><div class="confirm-card"><h2>Ana menüye dönülsün mü?</h2><p>Bu ekrandan ayrılırsanız makineyi yeniden seçmeniz ve QR kodunu tekrar okutmanız gerekir.</p><div class="confirm-actions"><button id="cancelMenu" class="secondary">Vazgeç</button><button id="confirmMenu">Ana Menüye Dön</button></div></div></div>
+<div id="loader" class="overlay"><div class="modal"><img src="AKGLOG.png" alt="AKG"><h2 id="loadTitle">Sistem yükleniyor</h2><p id="loadText">Kullanıcı bilgileri hazırlanıyor...</p><div class="track"><div id="bar"></div></div><b id="percent">0%</b><button id="retry" class="hide">Tekrar Dene</button></div></div>
+<div id="refModal" class="ref-modal hide"><div class="ref-modal-kart">
+  <img id="refBuyuk" alt="Referans resim">
+  <button id="refKapat" class="secondary" type="button">Kapat</button>
+</div></div>
+<iframe name="postFrame" class="hide" title="Kayıt"></iframe>
+<form id="postForm" target="postFrame" method="post" class="hide"><input name="action" value="saveMaintenanceResultWithImage"><input name="payload" id="payload"><input name="imageBase64" id="base64"><input name="imageName" id="imageName"><input name="imageType" id="imageType"></form>
+
+<script src="net.js"></script>
+<script>
+'use strict';
+/* Operatör Paneli V5.4.28
+   RED seçildiğinde açıklama zorunludur (en az 10 karakter).
+   V5.4.28: Yönetici (admin) yetkili kullanıcı makineyi seçince QR okutmadan
+   doğrudan bakım listesine girer. Operatörler için QR zorunluluğu aynen devam eder.
+   V5.4.29: "Kayıt yanıtı alınamadı" düzeltmesi. Bekleme 60 saniye; süre dolunca
+   kayıt, istek numarası (clientRequestId) ile sunucuda aranır. Kayıt varsa başarılı sayılır.
+   V5.4.30: Bakım kartları bakımı yapan birimin rengiyle boyanır (admin ekranıyla aynı).
+   Elektrik #FFFF66 | Mekanik #66FFFF | Dış Servis #D6C1A6 | İş Güvenliği #FF5B3A
+   Numara kutusu durum rengini korur (bekleyen / tamamlanan / red).
+   V5.4.31: Kontrol ekranında bakım açıklaması resmin altında; bakımı yapan birim
+   ve yöneticinin kanıt fotoğrafı isteyip istemediği açıkça gösterilir.
+   V5.4.32: Fotoğraf zorunluysa Kaydet düğmesi fotoğraf çekilene kadar kilitli.
+   Büyük "Fotoğraf Çek" düğmesi, önizleme, "Yeniden Çek" ve bakım listesinde
+   "Fotoğraf gerekli" işareti.
+   V5.4.33: Referans resim standart boyutlu çerçevede (4:3). Resim kırpılmaz,
+   çerçeveye sığdırılır; dokununca tam ekran açılır.
+   V5.4.34: Bakımda "İstenen" değer varsa operatör "Ölçülen Değer / Tespit" alanını
+   doldurmak zorundadır. Değer E-Tablodaki MeasuredValue sütununa yazılır.
+*/
+const SESSION = CMMS.SESSION, $ = id => document.getElementById(id);
+const STATUS_KEY = 'cmmsDurum_V5421'; /* V5.4.21 anahtarı korunuyor; mevcut renkler kaybolmasın */
+const RED_MIN = 10;
+
+let machineData = [], filtered = [], byMachine = {}, selectedMachine = null,
+    taskData = [], selectedTask = null, pending = null,
+    pendingTimer = null, currentStep = 'machines', qrLibPromise = null,
+    statusMap = {}, qr = null, qrRunning = false,
+    cameraList = [], cameraIndex = 0, modalOpen = false, lastBadScan = '';
+
+function step(id){ currentStep=id; ['machines','qr','tasks','control'].forEach(x=>$(x).classList.toggle('hide',x!==id)); $('mainMenuBtn').disabled=false; window.scrollTo(0,0); }
+function esc(v){ return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function getSessionUser(){ for(const k of [SESSION,'haftalikBakimV530User','cmmsUser']) try{ const u=JSON.parse(sessionStorage.getItem(k)||'null'); if(u&&(u.operator||u.name||u.fullName)) return u; }catch(e){} return {}; }
+function shortName(n){ const p=String(n||'').trim().split(/\s+/).filter(Boolean); return !p.length?'OPERATÖR':p.length===1?p[0].toLocaleUpperCase('tr'):(p[0][0]+'.'+p.at(-1)).toLocaleUpperCase('tr'); }
+function weekKey(){ return CMMS.weekKey(); }
+/* V5.4.28: Oturumdaki kullanıcı yönetici mi? */
+function isAdmin(){ return String(getSessionUser().role||'').toLocaleLowerCase('tr').includes('admin'); }
+let qrAtlandi = false;
+
+/* ---------- Durum yönetimi ---------- */
+function sKey(machineId,templateId){ return machineId+'||'+templateId; }
+function loadLocalStatus(){
+  try{ const box=JSON.parse(localStorage.getItem(STATUS_KEY)||'null');
+    if(box && box.week===weekKey() && box.map) return box.map; }catch(e){}
+  return {};
+}
+function saveLocalStatus(){
+  try{ localStorage.setItem(STATUS_KEY, JSON.stringify({week:weekKey(),map:statusMap})); }catch(e){}
+}
+function mergeServerStatus(r){
+  [r.results,r.records,r.maintenanceResults,r.weeklyResults,r.sonuclar]
+    .filter(x=>Array.isArray(x))
+    .forEach(list=>list.forEach(x=>{
+      const mid=x.machineId||x.makineId, tid=x.templateId||x.bakimId;
+      if(!mid||!tid) return;
+      if(x.weekKey && String(x.weekKey).indexOf('W')>-1 && String(x.weekKey)!==weekKey()) return;
+      const res=String(x.result||x.sonuc||'').toLocaleUpperCase('tr');
+      statusMap[sKey(mid,tid)] = res.indexOf('RED')>-1 ? 'red' : 'tamamlanan';
+    }));
+  saveLocalStatus();
+}
+function statusOf(machineId,templateId){ return statusMap[sKey(machineId,templateId)] || 'bekleyen'; }
+function tasksOf(machineId){ return (byMachine[machineId]||[]).filter(x=>x.active).sort((a,b)=>(a.orderNo||1)-(b.orderNo||1)); }
+
+/* ---------- Çoklu kimlik eşleştirme ---------- */
+function norm(v){
+  return String(v||'').toLocaleUpperCase('tr')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Z0-9]/g,'');
+}
+function extractPayload(raw){
+  let v = String(raw||'').trim();
+  if(/^\s*\{/.test(v)){
+    try{ const o=JSON.parse(v);
+      v = o.machineCode || o.toplamMakineKodu || o.id || o.machineId || o.machineName || v;
+    }catch(e){}
+  }
+  if(/^https?:\/\//i.test(v)){
+    try{ const u=new URL(v);
+      v = u.searchParams.get('id') || u.searchParams.get('machineId') ||
+          u.searchParams.get('kod') || u.hash.replace('#','') ||
+          u.pathname.split('/').filter(Boolean).pop() || v;
+    }catch(e){}
+  }
+  return v;
+}
+function machineIdentities(m){
+  if(!m) return [];
+  const ad = m.machineName || '';
+  const cc = m.costCenter || m.maliyetMerkezi || '';
+  return [ m.id, m.machineId, m.code, m.machineCode, m.qrCode,
+           m.toplamMakineKodu, m.totalMachineCode,
+           ad, cc, ad+cc, ad+'-'+cc, cc+ad ]
+    .map(norm).filter(x=>x && x.length>=3);
+}
+function matchesMachine(raw, m){
+  const okunan = norm(extractPayload(raw));
+  if(!okunan || okunan.length < 3) return false;
+  const kimlikler = machineIdentities(m);
+  if(kimlikler.some(k => k === okunan)) return true;
+  const gucluler = kimlikler.filter(k => k.length >= 6);
+  return gucluler.some(k => okunan.indexOf(k) > -1 || k.indexOf(okunan) > -1);
+}
+function findMachineByScan(raw){
+  return machineData.find(m => matchesMachine(raw, m)) || null;
+}
+
+/* ---------- QR modal ---------- */
+function openQrModal(opt){
+  modalOpen = true;
+  $('qrModalIcon').className = 'qr-modal-icon ' + (opt.type||'err');
+  $('qrModalIcon').textContent = opt.icon || '!';
+  $('qrModalTitle').textContent = opt.title || '';
+  $('qrModalBody').innerHTML = opt.body || '';
+  $('qrModalRetry').textContent = opt.retryText || 'Tekrar Okut';
+  $('qrModalRetry').classList.toggle('hide', opt.hideRetry === true);
+  $('qrModal').classList.remove('hide');
+}
+function closeQrModal(){ modalOpen=false; $('qrModal').classList.add('hide'); }
+
+function showWrongMachineModal(raw){
+  const okunan = extractPayload(raw);
+  const baska = findMachineByScan(raw);
+  const beklenen = (selectedMachine.machineName||'') +
+    (selectedMachine.costCenter ? ' - ' + selectedMachine.costCenter : '');
+  let body = '<p>Okuttuğunuz QR etiketi seçtiğiniz makineye ait değil.</p>' +
+    '<div class="qr-compare">' +
+      '<div><b>Seçtiğiniz makine</b><span class="ok-val">' + esc(beklenen) + '</span></div>' +
+      '<div><b>Okunan etiket</b><span>' + esc(okunan) + '</span></div>' +
+    '</div>';
+  if(baska){
+    body += '<p><b>Bu etiket şu makineye ait:</b><br>' + esc(baska.machineName) + '</p>' +
+      '<p>Doğru makinenin başına gidin veya listeye dönüp <b>' + esc(baska.machineName) + '</b> makinesini seçin.</p>';
+  }else{
+    body += '<div class="qr-help-list"><b>Kontrol edin</b><ul>' +
+      '<li>Doğru makinenin başında mısınız?</li>' +
+      '<li>Etiket başka bir makineye ait olabilir.</li>' +
+      '<li>Etiket sistemde tanımlı olmayabilir; bakım sorumlusuna bildirin.</li>' +
+      '</ul></div>';
+  }
+  openQrModal({ type:'err', icon:'✕', title:'Hatalı Makine Etiketi', body });
+}
+
+/* ---------- QR kütüphanesi ---------- */
+function loadScript(src){
+  return new Promise(ok=>{
+    const s=document.createElement('script');
+    s.src=src; s.async=true;
+    s.onload=()=>ok(true); s.onerror=()=>ok(false);
+    document.head.appendChild(s);
+  });
+}
+function loadQrLib(){
+  if (window.Html5Qrcode) return Promise.resolve(true);
+  if (qrLibPromise) return qrLibPromise;
+  qrLibPromise = (async ()=>{
+    let ok = await loadScript('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js');
+    if(!ok || !window.Html5Qrcode){
+      ok = await loadScript('https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js');
+    }
+    return Boolean(window.Html5Qrcode);
+  })();
+  return qrLibPromise;
+}
+
+function qrState(text, cls){
+  $('qrState').textContent = text || '';
+  $('qrState').className = 'qr-state ' + (cls||'');
+}
+function isSecure(){
+  return window.isSecureContext || location.protocol==='https:' ||
+         location.hostname==='localhost' || location.hostname==='127.0.0.1';
+}
+function qrboxSize(){
+  const w = $('reader').clientWidth || 320;
+  const size = Math.max(160, Math.min(300, Math.floor(w * 0.72)));
+  return { width:size, height:size };
+}
+function pickBackCamera(list){
+  const arka = list.find(c=>/back|rear|arka|environment/i.test(c.label||''));
+  if(arka) return list.indexOf(arka);
+  return list.length>1 ? list.length-1 : 0;
+}
+async function hardResetReader(){
+  if(qr){
+    try{ if(qrRunning) await qr.stop(); }catch(e){}
+    try{ qr.clear(); }catch(e){}
+  }
+  qr=null; qrRunning=false;
+  $('reader').innerHTML='';
+}
+
+async function startCamera(useIndex){
+  if(!isSecure()){
+    qrState('Kamera açılamıyor: sayfa güvenli değil.', 'err');
+    openQrModal({
+      type:'warn', icon:'⚠', title:'Kamera Açılamıyor',
+      body:'<p>Tarayıcı kamerayı yalnızca <b>https://</b> adreslerde açar.</p>' +
+           '<div class="qr-compare"><div><b>Şu anki adres</b><span>' + esc(location.protocol+'//'+location.host) + '</span></div></div>' +
+           '<div class="qr-help-list"><b>Çözüm</b><ul>' +
+           '<li>Sayfayı https:// ile açın.</li>' +
+           '<li>Dosyayı bilgisayardan çift tıklayarak açtıysanız kamera çalışmaz.</li>' +
+           '<li>Bakım sorumlusuna bildirin.</li></ul></div>',
+      hideRetry:true
+    });
+    return;
+  }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    qrState('Bu tarayıcı kamerayı desteklemiyor.', 'err');
+    openQrModal({
+      type:'warn', icon:'⚠', title:'Tarayıcı Desteklemiyor',
+      body:'<div class="qr-help-list"><b>Yapılacaklar</b><ul>' +
+           '<li>Android için Chrome, iPhone için Safari kullanın.</li>' +
+           '<li>WhatsApp veya Teams içinden açtıysanız bağlantıyı kopyalayıp tarayıcıda açın.</li>' +
+           '</ul></div>',
+      hideRetry:true
+    });
+    return;
+  }
+
+  $('camStart').disabled = true;
+  qrState('Kamera kütüphanesi yükleniyor...');
+
+  const libOk = await loadQrLib();
+  if(!libOk){
+    $('camStart').disabled=false;
+    qrState('QR kütüphanesi yüklenemedi.', 'err');
+    openQrModal({
+      type:'err', icon:'✕', title:'QR Kütüphanesi Yüklenemedi',
+      body:'<div class="qr-help-list"><b>Olası nedenler</b><ul>' +
+           '<li>İnternet bağlantısı yok.</li>' +
+           '<li>Şirket ağı kütüphane adresini engelliyor.</li>' +
+           '<li>Mobil veriye geçip tekrar deneyin.</li></ul></div>',
+      retryText:'Tekrar Dene'
+    });
+    return;
+  }
+
+  await hardResetReader();
+  qrState('Kamera izni isteniyor...');
+
+  try{
+    if(!cameraList.length){
+      try{ cameraList = await Html5Qrcode.getCameras() || []; }catch(e){ cameraList=[]; }
+    }
+    if(cameraList.length){
+      cameraIndex = (useIndex===undefined) ? pickBackCamera(cameraList) : (useIndex % cameraList.length);
+    }
+    qr = new Html5Qrcode('reader', { verbose:false });
+    const config = { fps:10, qrbox:qrboxSize(), aspectRatio:1.0,
+                     experimentalFeatures:{ useBarCodeDetectorIfSupported:true } };
+    let started = false;
+    if(useIndex===undefined){
+      try{ await qr.start({ facingMode:{ exact:'environment' } }, config, onScan, ()=>{}); started=true; }catch(e){}
+    }
+    if(!started && cameraList.length){
+      await qr.start({ deviceId:{ exact: cameraList[cameraIndex].id } }, config, onScan, ()=>{});
+      started = true;
+    }
+    if(!started){
+      await qr.start({ facingMode:'environment' }, config, onScan, ()=>{});
+      started = true;
+    }
+    qrRunning = true;
+    $('camStart').classList.add('hide');
+    $('camStop').classList.remove('hide');
+    if(cameraList.length>1) $('camSwitch').classList.remove('hide');
+    qrState('Kamera açık. QR etiketini çerçeveye getirin.', 'ok');
+  }catch(err){
+    qrRunning=false;
+    $('camStart').disabled=false;
+    $('camStart').classList.remove('hide');
+    handleCameraError(err);
+  }
+}
+
+function handleCameraError(err){
+  const t = String((err && (err.name||'')) + ' ' + (err && (err.message||err) || ''));
+  if(/NotAllowedError|Permission/i.test(t)){
+    qrState('Kamera izni reddedildi.', 'err');
+    openQrModal({ type:'err', icon:'✕', title:'Kamera İzni Reddedildi',
+      body:'<div class="qr-help-list"><b>İzni açmak için</b><ul>' +
+           '<li>Adres çubuğundaki kilit simgesine dokunun.</li>' +
+           '<li>Kamera iznini "İzin Ver" yapın.</li>' +
+           '<li>Sayfayı yenileyip tekrar deneyin.</li></ul></div>' });
+    return;
+  }
+  if(/NotFoundError|DevicesNotFound|OverconstrainedError/i.test(t)){
+    qrState('Kamera bulunamadı.', 'err');
+    openQrModal({ type:'err', icon:'✕', title:'Kamera Bulunamadı',
+      body:'<div class="qr-help-list"><b>Kontrol edin</b><ul>' +
+           '<li>Cihazda çalışan bir kamera var mı?</li>' +
+           '<li>Kamerayı Değiştir düğmesini deneyin.</li></ul></div>' });
+    return;
+  }
+  if(/NotReadableError|TrackStartError/i.test(t)){
+    qrState('Kamera başka uygulamada kullanılıyor.', 'err');
+    openQrModal({ type:'warn', icon:'⚠', title:'Kamera Meşgul',
+      body:'<div class="qr-help-list"><b>Yapılacaklar</b><ul>' +
+           '<li>Teams, Zoom veya kamera uygulamasını kapatın.</li>' +
+           '<li>Aynı sitenin diğer sekmelerini kapatın.</li>' +
+           '<li>Tekrar Okut düğmesine basın.</li></ul></div>' });
+    return;
+  }
+  qrState('Kamera açılamadı.', 'err');
+  openQrModal({ type:'err', icon:'✕', title:'Kamera Açılamadı',
+    body:'<p>' + esc(t) + '</p>' +
+         '<div class="qr-help-list"><b>Denenebilir</b><ul>' +
+         '<li>Tekrar Okut düğmesine basın.</li>' +
+         '<li>Sayfayı yenileyin.</li>' +
+         '<li>Kamerayı Değiştir düğmesini deneyin.</li></ul></div>' });
+}
+
+async function stopCamera(silent){
+  await hardResetReader();
+  $('camStart').disabled=false;
+  $('camStart').classList.remove('hide');
+  $('camStop').classList.add('hide');
+  $('camSwitch').classList.add('hide');
+  if(!silent) qrState('Kamera durduruldu.', '');
+}
+async function switchCamera(){
+  if(!cameraList.length) return;
+  const next = (cameraIndex + 1) % cameraList.length;
+  await stopCamera(true);
+  startCamera(next);
+}
+async function leaveQr(){
+  closeQrModal();
+  await stopCamera(true);
+  qrState('');
+  step('machines');
+}
+
+let verifyBusy = false;
+function onScan(value){
+  if(!selectedMachine || modalOpen || verifyBusy) return;
+  verify(value);
+}
+async function verify(raw){
+  if(verifyBusy) return;
+  verifyBusy = true;
+  try{
+    if(!matchesMachine(raw, selectedMachine)){
+      const okunan = norm(extractPayload(raw));
+      if(okunan !== lastBadScan){
+        lastBadScan = okunan;
+        await stopCamera(true);
+        showWrongMachineModal(raw);
+      }
+      return;
+    }
+    lastBadScan = '';
+    await stopCamera(true);
+    closeQrModal();
+    taskData = tasksOf(selectedMachine.id);
+    $('taskName').textContent = selectedMachine.machineName;
+    qrAtlandi = false;
+    $('adminBilgi').classList.add('hide');
+    renderTasks();
+    step('tasks');
+  } finally { verifyBusy = false; }
+}
+
+/* ---------- Veri ---------- */
+function applyBootstrap(r){
+  machineData = r.machines || [];
+  byMachine = r.templatesByMachine || {};
+  mergeServerStatus(r);
+  applyFilter($('search').value||'');
+}
+
+async function init(){
+  $('retry').classList.add('hide');
+  statusMap = loadLocalStatus();
+  try{
+    const u = getSessionUser();
+    $('headerOperator').textContent = shortName(u.operator||u.name||u.fullName);
+    $('loadTitle').textContent = (u.operator||u.name||'Operatör')+' için sistem yükleniyor';
+    $('bar').style.width='35%'; $('percent').textContent='35%';
+    const r = await CMMS.cachedCall('getWeeklyBootstrap', {}, {
+      ttl: 300000,
+      onFresh: fresh => { applyBootstrap(fresh); $('msg').textContent='Liste güncellendi.'; }
+    });
+    if(!r.success) throw Error(r.message);
+    applyBootstrap(r);
+    $('bar').style.width='100%'; $('percent').textContent='100%';
+    $('loader').classList.add('hide');
+    loadQrLib();
+  }catch(e){
+    $('loadText').textContent=e.message;
+    $('retry').classList.remove('hide');
+  }
+}
+
+function render(){
+  if(!filtered.length){ $('machineList').innerHTML='<div class="empty-state">Kayıt yok</div>'; return; }
+  $('machineList').innerHTML = filtered.map(m=>{
+    const list=tasksOf(m.id);
+    const bar=list.map((t,i)=>{
+      const st=statusOf(m.id,t.templateId);
+      return `<span class="step ${st}" title="${esc((i+1)+'. '+(t.task||''))}">${i+1}</span>`;
+    }).join('');
+    const bitti=list.filter(t=>statusOf(m.id,t.templateId)!=='bekleyen').length;
+    return `<button class="machine-card" type="button" data-id="${esc(m.id)}">
+      <span class="mc-name">${esc(m.machineName)}</span>
+      <span class="step-bar">${bar||'<span class="mc-progress">Tanımlı bakım yok</span>'}</span>
+      ${list.length?`<span class="mc-progress">${bitti} / ${list.length} bakım tamamlandı</span>`:''}
+    </button>`;
+  }).join('');
+  document.querySelectorAll('.machine-card').forEach(b=>b.onclick=()=>selectMachine(b.dataset.id));
+}
+function applyFilter(q){
+  q=String(q||'').toLocaleLowerCase('tr');
+  filtered = q ? machineData.filter(x=>String(x.machineName||'').toLocaleLowerCase('tr').includes(q)) : machineData;
+  render();
+}
+
+async function selectMachine(id){
+  selectedMachine = machineData.find(x=>x.id===id);
+  /* V5.4.28: Yönetici QR okutmadan doğrudan bakım listesine girer */
+  if(isAdmin()){
+    qrAtlandi = true;
+    await hardResetReader();
+    closeQrModal();
+    taskData = tasksOf(selectedMachine.id);
+    $('taskName').textContent = selectedMachine.machineName;
+    $('adminBilgi').classList.remove('hide');
+    renderTasks();
+    step('tasks');
+    return;
+  }
+  qrAtlandi = false;
+  $('adminBilgi').classList.add('hide');
+  $('qrName').textContent = selectedMachine.machineName;
+  lastBadScan=''; closeQrModal(); qrState('');
+  await hardResetReader();
+  $('camStart').disabled=false;
+  $('camStart').classList.remove('hide');
+  $('camStop').classList.add('hide');
+  $('camSwitch').classList.add('hide');
+  step('qr');
+  startCamera();
+}
+
+/* V5.4.30: Bakımı yapan birim (E-Tablo "System" sütunu) */
+const BIRIMLER = [
+  { deger:'ELEKTRİK',     ad:'Elektrik',     kod:'elektrik' },
+  { deger:'MEKANİK',      ad:'Mekanik',      kod:'mekanik'  },
+  { deger:'DIŞ SERVİS',   ad:'Dış Servis',   kod:'dis'      },
+  { deger:'İŞ GÜVENLİĞİ', ad:'İş Güvenliği', kod:'isg'      }
+];
+function birimAnahtar(v){
+  return String(v||'').toLocaleUpperCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,'');
+}
+function birimBul(v){
+  const k = birimAnahtar(v);
+  return k ? (BIRIMLER.find(b => birimAnahtar(b.deger) === k) || null) : null;
+}
+
+function renderTasks(){
+  $('taskList').innerHTML = taskData.map((t,i)=>{
+    const st=statusOf(selectedMachine.id,t.templateId);
+    const b=birimBul(t.system);
+    const birimAd = b ? b.ad : (String(t.system||'').trim() || 'Birim yok');
+    return `<button class="listBtn${b ? ' birim-' + b.kod : ''}" data-id="${esc(t.templateId)}">
+      <span class="task-no ${st}">${i+1}</span>
+      <span class="task-text"><b>${esc(t.task)}</b><small>Bölge: ${esc(t.region||'-')}</small><span class="etk-satir"><span class="birim-etk">${esc(birimAd)}</span>${t.photoRequired ? '<span class="foto-gerekli"><svg viewBox="0 0 24 24"><path d="M12 9a3.2 3.2 0 1 0 0 6.4A3.2 3.2 0 0 0 12 9m8-3h-3.2L15 4H9L7.2 6H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2"/></svg>Fotoğraf gerekli</span>' : ''}</span></span>
+    </button>`;
+  }).join('')||'<div class="empty-state">Bu makine için tanımlı bakım yok.</div>';
+  document.querySelectorAll('#taskList .listBtn').forEach(b=>b.onclick=()=>openControl(b.dataset.id));
+}
+
+function openControl(id){
+  selectedTask = taskData.find(x=>x.templateId===id);
+  $('controlName').textContent = selectedMachine.machineName + ' - ' + (taskData.indexOf(selectedTask) + 1) + '. bakım';
+  $('target').textContent = selectedTask.targetValue||'-';
+
+  /* V5.4.31: Bakım bilgi kartı */
+  const b = birimBul(selectedTask.system);
+  $('bakimKart').className = 'bakim-kart' + (b ? ' birim-' + b.kod : '');
+  $('bkMetin').textContent = selectedTask.task || '-';
+  $('bkBirim').innerHTML = '<svg viewBox="0 0 24 24"><path d="M22.7 19 13.6 9.9c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4"/></svg>' +
+    'Bakımı yapan: ' + esc(b ? b.ad : (String(selectedTask.system||'').trim() || 'Belirtilmemiş'));
+  const kamera = '<svg viewBox="0 0 24 24"><path d="M12 9a3.2 3.2 0 1 0 0 6.4A3.2 3.2 0 0 0 12 9m8-3h-3.2L15 4H9L7.2 6H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2"/></svg>';
+  if(selectedTask.photoRequired){
+    $('bkFoto').className = 'bk-etk foto-zorunlu';
+    $('bkFoto').innerHTML = kamera + 'Yönetici kanıt fotoğrafı istiyor';
+  }else{
+    $('bkFoto').className = 'bk-etk foto-istege';
+    $('bkFoto').innerHTML = kamera + 'Kanıt fotoğrafı isteğe bağlı';
+  }
+  $('proofZorunlu').classList.toggle('goster', !!selectedTask.photoRequired);
+  $('proof').classList.remove('eksik');
+  if(selectedTask.referenceImageUrl){
+    $('ref').src=selectedTask.referenceImageUrl; $('ref').classList.remove('hide');
+    $('refCerceve').classList.remove('bos');
+  }else{
+    $('ref').removeAttribute('src'); $('ref').classList.add('hide');
+    $('refCerceve').classList.add('bos');
+  }
+  $('result').value=''; $('desc').value=''; $('proof').value=''; $('saveMsg').textContent=''; $('saveMsg').className='';
+  /* V5.4.34: İstenen değer varsa ölçüm alanını göster */
+  $('measured').value=''; $('measured').classList.remove('eksik'); $('olcumAlan').classList.remove('eksik');
+  $('olcumHedef').textContent = String(selectedTask.targetValue||'').trim();
+  $('olcumAlan').classList.toggle('hide', !olcumGerekli());
+  $('fotoAlan').classList.remove('eksik');
+  aciklamaDurumGuncelle();
+  fotoDurumGuncelle();
+  step('control');
+}
+
+/* ---------- V5.4.32 Fotoğraf alanı ve Kaydet kilidi ---------- */
+let fotoUrl = null;
+function fotoDurumGuncelle(){
+  const f = $('proof').files[0];
+  const zorunlu = !!(selectedTask && selectedTask.photoRequired);
+  const alan = $('fotoAlan');
+  alan.classList.toggle('zorunlu', zorunlu && !f);
+  alan.classList.toggle('tamam', !!f);
+  if(fotoUrl){ URL.revokeObjectURL(fotoUrl); fotoUrl = null; }
+  if(f){
+    fotoUrl = URL.createObjectURL(f);
+    $('fotoOnizleme').src = fotoUrl;
+    $('fotoAd').textContent = f.name + ' (' + Math.round(f.size/1024) + ' KB)';
+    $('fotoCekYazi').textContent = 'Yeniden Çek';
+  }else{
+    $('fotoOnizleme').removeAttribute('src');
+    $('fotoAd').textContent = '';
+    $('fotoCekYazi').textContent = zorunlu ? 'Fotoğraf Çek (zorunlu)' : 'Fotoğraf Çek';
+  }
+  if(!pending){
+    const kilit = zorunlu && !f;
+    $('save').disabled = kilit;
+    $('save').classList.toggle('kilitli', kilit);
+    $('save').textContent = kilit ? '📷 Önce fotoğraf çekin' : 'Kontrolü Kaydet';
+  }
+}
+
+/* ---------- RED açıklama zorunluluğu ---------- */
+/* V5.4.34 */
+function olcumGerekli(){
+  const v = String((selectedTask && selectedTask.targetValue) || '').trim();
+  return v !== '' && v !== '-';
+}
+function redMi(){
+  return String($('result').value||'').toLocaleUpperCase('tr').indexOf('RED') > -1;
+}
+function aciklamaDurumGuncelle(){
+  const red = redMi();
+  const uzunluk = $('desc').value.trim().length;
+  $('descZorunlu').classList.toggle('goster', red);
+  $('redUyari').classList.toggle('goster', red);
+  $('desc').placeholder = red
+    ? 'Arıza nedir? Ne yapılması gerekiyor? (en az ' + RED_MIN + ' karakter)'
+    : 'Açıklama (isteğe bağlı)';
+  if(red){
+    $('descSayac').textContent = uzunluk + ' / ' + RED_MIN + ' karakter';
+    $('descSayac').style.color = uzunluk >= RED_MIN ? '#167a42' : '#b11f2e';
+    $('desc').classList.toggle('eksik', uzunluk > 0 && uzunluk < RED_MIN);
+  }else{
+    $('descSayac').textContent = '';
+    $('desc').classList.remove('eksik');
+  }
+}
+
+/* ---------- Fotoğraf ---------- */
+function compress(f){
+  return new Promise((ok,no)=>{
+    if(!f) return ok('');
+    const reader=new FileReader(), img=new Image();
+    reader.onerror=no;
+    reader.onload=e=>{ img.src=e.target.result; };
+    img.onerror=()=>{ ok(String(reader.result).split(',')[1]); };
+    img.onload=()=>{
+      try{
+        const max=1400, scale=Math.min(1,max/Math.max(img.width,img.height));
+        const c=document.createElement('canvas');
+        c.width=Math.round(img.width*scale); c.height=Math.round(img.height*scale);
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        ok(c.toDataURL('image/jpeg',0.72).split(',')[1]);
+      }catch(err){ ok(String(reader.result).split(',')[1]); }
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function unlockSave(text){
+  clearTimeout(pendingTimer); pendingTimer=null; pending=null;
+  $('save').disabled=false; $('save').textContent='Kontrolü Kaydet';
+  if(text) $('saveMsg').textContent=text;
+  if(selectedTask) fotoDurumGuncelle();
+}
+
+async function save(){
+  if(pending) return;
+  const result=$('result').value, file=$('proof').files[0];
+  const aciklama=$('desc').value.trim();
+  /* V5.4.34: Ölçülen değer zorunluluğu */
+  if(olcumGerekli() && !$('measured').value.trim()){
+    $('saveMsg').textContent = 'Bu bakımda istenen değer var. Ölçtüğünüz değeri veya tespitinizi yazın.';
+    $('saveMsg').className = 'error';
+    $('measured').classList.add('eksik'); $('olcumAlan').classList.add('eksik');
+    $('olcumAlan').scrollIntoView({ behavior:'smooth', block:'center' });
+    $('measured').focus();
+    return;
+  }
+  if(!result) return $('saveMsg').textContent='Sonuç seçin.';
+
+  /* RED verildiyse açıklama zorunludur */
+  if(redMi() && aciklama.length < RED_MIN){
+    $('saveMsg').textContent = 'RED verdiğiniz için açıklama zorunludur. En az ' + RED_MIN + ' karakter yazın.';
+    $('saveMsg').className = 'error';
+    $('desc').classList.add('eksik');
+    $('desc').focus();
+    aciklamaDurumGuncelle();
+    return;
+  }
+
+  if(selectedTask.photoRequired && !file){
+    $('saveMsg').textContent='Yönetici bu bakım için kanıt fotoğrafı istiyor. Lütfen fotoğraf ekleyin.';
+    $('saveMsg').className='error';
+    $('fotoAlan').classList.remove('eksik'); void $('fotoAlan').offsetWidth; $('fotoAlan').classList.add('eksik');
+    $('fotoAlan').scrollIntoView({ behavior:'smooth', block:'center' });
+    fotoDurumGuncelle();
+    return;
+  }
+  const req='REQ-'+Date.now(), u=getSessionUser();
+  pending={req,machineId:selectedMachine.id,templateId:selectedTask.templateId,result};
+  $('save').disabled=true; $('save').textContent='Kaydediliyor...';
+  $('saveMsg').className='';
+  $('saveMsg').textContent='Fotoğraf hazırlanıyor...';
+  try{
+    const b64 = await compress(file);
+    $('saveMsg').textContent='Gönderiliyor... (en fazla 60 saniye)';
+    $('postForm').action=CMMS.API_URL;
+    $('payload').value=JSON.stringify({
+      clientRequestId:req,
+      templateId:selectedTask.templateId,
+      machineId:selectedMachine.id,
+      machineName:selectedMachine.machineName,
+      operator:u.operator||'',
+      result,
+      description:aciklama,
+      measuredValue:$('measured').value.trim(),
+      weekKey:weekKey(),
+      qrBypass:qrAtlandi
+    });
+    $('base64').value=b64;
+    $('imageName').value=file?file.name.replace(/[^a-zA-Z0-9._-]/g,'_'):'';
+    $('imageType').value=file?'image/jpeg':'';
+    $('postForm').submit();
+    /* V5.4.29: Süre dolunca hemen hata verme; kaydın oluşup oluşmadığını sunucuya sor */
+    pendingTimer=setTimeout(()=>kayitDogrula(req),60000);
+  }catch(error){ unlockSave(error.message); }
+}
+
+/* V5.4.29: Yanıt gelmediyse kaydı istek numarasıyla sunucuda ara */
+async function kayitDogrula(req){
+  if(!pending || pending.req !== req) return;
+  $('saveMsg').className='';
+  $('saveMsg').textContent='Yanıt gecikti, kayıt kontrol ediliyor...';
+  try{
+    const r = await CMMS.call('listMaintenanceRecords', { clientRequestId: req }, { retries: 1, timeout: 20000 });
+    if(!pending || pending.req !== req) return;   /* bu arada yanıt gelmiş olabilir */
+    const kayit = r && r.success && (r.records||[]).find(x => x.clientRequestId === req);
+    if(kayit){
+      done({ recordId: kayit.recordId, machineId: kayit.machineId, templateId: kayit.templateId, result: kayit.result });
+      $('saveMsg').textContent = '✅ Kontrol kaydedildi - ' + (kayit.recordId||'') + ' (yanıt gecikmeli geldi)';
+    }else{
+      unlockSave('Kayıt bulunamadı. Lütfen tekrar kaydedin.');
+      $('saveMsg').className='error';
+    }
+  }catch(err){
+    unlockSave('Kayıt doğrulanamadı: ' + err.message + '. Kaydetmeden önce RED listesini kontrol edin.');
+    $('saveMsg').className='error';
+  }
+}
+
+function done(r){
+  const mid = r.machineId || (pending && pending.machineId);
+  const tid = r.templateId || (pending && pending.templateId);
+  const res = r.result || (pending && pending.result) || '';
+  if(mid && tid){
+    statusMap[sKey(mid,tid)] =
+      String(res).toLocaleUpperCase('tr').indexOf('RED')>-1 ? 'red' : 'tamamlanan';
+    saveLocalStatus();
+  }
+  unlockSave('✅ Kontrol kaydedildi - '+(r.recordId||''));
+  $('saveMsg').className='success';
+  renderTasks(); render();
+  setTimeout(()=>step('tasks'),700);
+}
+window.addEventListener('message',e=>{
+  if(e.data && e.data.source==='CMMS_APPS_SCRIPT_RESULT'){
+    if(e.data.success){ done(e.data); }
+    else { unlockSave(e.data.message); $('saveMsg').className='error'; }
+  }
+});
+
+function askMenu(){ $('menuConfirm').classList.remove('hide'); }
+function cancelMenu(){ $('menuConfirm').classList.add('hide'); }
+async function goMenu(){ cancelMenu(); closeQrModal(); await stopCamera(true); selectedMachine=null; selectedTask=null; taskData=[]; location.replace('index.html?screen=home'); }
+async function exitSystem(){
+  if(!confirm(currentStep==='machines'?'Sistemden çıkmak istiyor musunuz?':'Çıkarsanız seçili makine kapanır ve tekrar QR okutmanız gerekir. Sistemden çıkılsın mı?')) return;
+  await stopCamera(true); sessionStorage.removeItem(SESSION); CMMS.cacheClear(); location.href='index.html';
+}
+
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden && qrRunning) stopCamera(true); });
+window.addEventListener('pagehide', ()=>{ if(qrRunning) stopCamera(true); });
+
+$('result').onchange = aciklamaDurumGuncelle;
+$('measured').oninput = ()=>{ if($('measured').value.trim()){ $('measured').classList.remove('eksik'); $('olcumAlan').classList.remove('eksik'); } };
+$('proof').onchange = ()=>{ $('fotoAlan').classList.remove('eksik'); fotoDurumGuncelle(); };
+$('fotoCekBtn').onclick = ()=>{ $('proof').value=''; $('proof').click(); };
+$('refCerceve').onclick = ()=>{ if(!$('ref').getAttribute('src')) return; $('refBuyuk').src=$('ref').src; $('refModal').classList.remove('hide'); };
+$('refKapat').onclick = ()=>{ $('refModal').classList.add('hide'); $('refBuyuk').removeAttribute('src'); };
+$('refModal').onclick = e=>{ if(e.target===$('refModal')) $('refKapat').click(); };
+$('desc').oninput = aciklamaDurumGuncelle;
+$('qrModalRetry').onclick = ()=>{ closeQrModal(); lastBadScan=''; startCamera(); };
+$('qrModalBack').onclick  = leaveQr;
+$('camStart').onclick = ()=>startCamera();
+$('camStop').onclick  = ()=>stopCamera();
+$('camSwitch').onclick= switchCamera;
+$('mainMenuBtn').onclick=askMenu; $('exitBtn').onclick=exitSystem;
+$('cancelMenu').onclick=cancelMenu; $('confirmMenu').onclick=goMenu;
+$('search').oninput=e=>applyFilter(e.target.value);
+$('save').onclick=save; $('retry').onclick=init;
+$('mainMenuBtn').disabled=false;
+init();
+</script>
+</body></html>

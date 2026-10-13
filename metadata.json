@@ -1,0 +1,8 @@
+{
+  "name": "AKG Haftalık Bakım CMMS V5.4.42",
+  "description": "AKG Endüstriyel Soğutma Sistemleri Haftalık Bakım ve Bilgisayarlı Yönetim Sistemi (CMMS). Operatör paneli, QR doğrulama, RED arıza takibi, admin tanımları, raporlama ve arıza analizi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

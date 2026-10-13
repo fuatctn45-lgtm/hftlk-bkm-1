@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bakım Raporları V5.4.41</title>
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="dns-prefetch" href="https://script.google.com">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="mobil-tasma-duzeltme.css">
+<style>
+/* =====================================================================
+   Rapor ekranı V5.4.39 - herkes görebilir
+   ===================================================================== */
+main{max-width:1100px !important}
+.filtre-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.filtre-grid label{margin-top:4px}
+.tarih-araligi{display:none;grid-template-columns:1fr 1fr;gap:10px}
+.tarih-araligi.goster{display:grid}
+@media(max-width:760px){.filtre-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.filtre-grid,.tarih-araligi.goster{grid-template-columns:1fr;gap:0}}
+.donem-bilgi{margin:6px 0 0;font-size:13px;color:#475569;font-weight:600}
+
+/* Rapor başlığı: bakımı yapan */
+.rapor-baslik{display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center;padding:14px 16px;border-radius:12px;
+  background:#0f4c81;color:#fff;margin-bottom:12px}
+.rapor-baslik h2{margin:0;color:#fff;font-size:18px;flex:1 1 100%}
+.rapor-baslik span{font-size:14px}
+.rapor-baslik b{font-weight:900}
+
+/* Özet kutuları */
+.ozet{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+@media(max-width:900px){.ozet{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:480px){.ozet{grid-template-columns:repeat(2,1fr)}}
+.kutu{padding:14px;border-radius:12px;background:#f6f9fc;border:1px solid #dce5ef}
+.kutu b{display:block;font-size:26px;line-height:1.1;color:#0f2d4d}
+.kutu small{display:block;margin-top:4px;font-size:12px;color:#64748b;font-weight:700}
+.kutu.yesil{background:#effaf3;border-color:#b7e4c7}.kutu.yesil b{color:#167a42}
+.kutu.turuncu{background:#fff7e6;border-color:#ffd591}.kutu.turuncu b{color:#b35c00}
+.kutu.kirmizi{background:#fff1f1;border-color:#ffc9c9}.kutu.kirmizi b{color:#b11f2e}
+.kutu.mavi{background:#eef4ff;border-color:#c7d8f5}.kutu.mavi b{color:#0f4c81}
+
+.bolum-ust{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.bolum-ust h2{margin:0}
+.bolum-ust small{color:#64748b;font-weight:600}
+
+/* Tablolar */
+.tablo-kap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #dce5ef;border-radius:12px}
+table.rapor{width:100%;border-collapse:collapse;font-size:14px;min-width:620px}
+table.rapor th{position:sticky;top:0;background:#0f4c81;color:#fff;text-align:left;padding:10px;font-size:12px;letter-spacing:.3px;white-space:nowrap}
+table.rapor td{padding:9px 10px;border-top:1px solid #eef2f6;vertical-align:top;overflow-wrap:anywhere}
+table.rapor tr:nth-child(even) td{background:#fafcfe}
+table.rapor td.sayi,table.rapor th.sayi{text-align:right;white-space:nowrap}
+table.rapor tr.sifir td{background:#fff1f1 !important}
+table.rapor tr.birim-elektrik td{background:#FFFF66 !important}
+table.rapor tr.birim-mekanik td{background:#66FFFF !important}
+table.rapor tr.birim-dis td{background:#D6C1A6 !important}
+table.rapor tr.birim-isg td{background:#FF5B3A !important;color:#fff}
+.oran{display:flex;align-items:center;gap:8px;min-width:130px}
+.oran .cubuk{flex:1;height:10px;border-radius:99px;background:#e3eaf2;overflow:hidden}
+.oran .cubuk i{display:block;height:100%;border-radius:99px}
+.oran b{width:42px;text-align:right;font-size:13px}
+.sonuc{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:900}
+.sonuc.red{background:#FF9999;color:#7a1414}
+.sonuc.uygun{background:#99FF99;color:#0d5c2c}
+.foto-link{font-weight:700;color:#0f4c81;white-space:nowrap}
+
+.ariza{padding:11px 14px;margin:8px 0;border-radius:10px;border:1px solid #ffc9c9;border-left:6px solid #b11f2e;background:#fff}
+.ariza b{display:block;color:#0f2d4d;overflow-wrap:anywhere}
+.ariza small{display:block;color:#64748b;font-size:12px}
+.ariza p{margin:5px 0 0;font-size:14px;overflow-wrap:anywhere}
+
+.arac-butonlar{display:flex;gap:8px;flex-wrap:wrap}
+.arac-butonlar button{width:auto;margin:0;padding:10px 16px;font-size:14px}
+.mail-btn{background:#b11f2e !important}
+.mail-btn:hover{background:#8f1824 !important}
+.mail-btn:disabled{background:#94a3b8 !important;opacity:1}
+.detay-ara{margin:0 0 10px}
+
+/* Mail penceresi */
+.mail-modal{position:fixed;inset:0;z-index:13500;display:flex;align-items:center;justify-content:center;padding:16px;background:#081728e0}
+.mail-kart{width:min(480px,100%);max-height:90vh;overflow-y:auto;background:#fff;border-radius:18px;padding:22px 20px}
+.mail-kart h2{margin:0 0 8px;font-size:20px}
+.mail-ozet{margin:8px 0 12px;padding:12px 14px;border-radius:10px;background:#f4f7fb;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
+.mail-ozet b{color:#0f2d4d}
+.mail-sonuc{margin-top:10px;font-size:14px;font-weight:700;overflow-wrap:anywhere}
+.mail-sonuc.ok{color:#167a42}
+.mail-sonuc.hata{color:#b11f2e}
+.mail-butonlar{display:grid;gap:9px;margin-top:12px}
+.mail-butonlar button{margin:0}
+
+@media print{
+  .op-header,.filtre-kart,.arac-butonlar,.detay-ara,#msg{display:none !important}
+  body{background:#fff}
+  main{max-width:none !important;padding:0 !important}
+  .card{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
+  .tablo-kap{overflow:visible;border:0}
+  table.rapor{min-width:0;font-size:11px}
+  table.rapor th,table.rapor td,.rapor-baslik{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<header class="op-header">
+  <div class="op-identity"><img src="AKGLOG.png" alt="AKG"><strong>Bakım Raporları</strong></div>
+  <nav class="op-menu">
+    <button id="homeBtn" class="icon-button" type="button" title="Ana Menü" aria-label="Ana Menü"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H4.5A1.5 1.5 0 0 1 3 19.5z"/></svg></button>
+    <button id="exitBtn" class="icon-button exit-button" type="button" title="Çıkış" aria-label="Çıkış"><svg viewBox="0 0 24 24"><path d="M10 4H5v16h5v-2H7V6h3zm8.6 7-3.3-3.3 1.4-1.4L22.4 12l-5.7 5.7-1.4-1.4 3.3-3.3H10v-2z"/></svg></button>
+  </nav>
+</header>
+
+<main>
+<!-- 1. Filtreler -->
+<section class="card filtre-kart">
+  <div class="bolum-ust">
+    <h1 style="margin:0">Bakım Raporları</h1>
+    <div class="arac-butonlar">
+      <button id="yenileBtn" class="secondary" type="button">Yenile</button>
+      <button id="csvBtn" class="secondary" type="button">Excel'e İndir</button>
+      <button id="yazdirBtn" class="secondary" type="button">Yazdır</button>
+      <button id="mailBtn" class="mail-btn" type="button">📧 PDF Mail Gönder</button>
+    </div>
+  </div>
+  <div class="filtre-grid">
+    <div>
+      <label for="donemSec">Dönem</label>
+      <select id="donemSec">
+        <option value="bu">Bu hafta</option>
+        <option value="gecen">Geçen hafta</option>
+        <option value="son4">Son 4 hafta</option>
+        <option value="ay">Bu ay</option>
+        <option value="ozel">Tarih aralığı seç</option>
+      </select>
+    </div>
+    <div>
+      <label for="operatorSec">Bakımı Yapan</label>
+      <!-- V5.4.40: Oturumu açan kişi otomatik; değiştirilemez -->
+      <input id="operatorSec" type="text" readonly tabindex="-1"
+             style="background:#eef4ff;border-color:#c7d8f5;font-weight:800;color:#0f2d4d;cursor:default">
+    </div>
+    <div>
+      <label for="makineAra">Makine</label>
+      <input id="makineAra" list="makineListe" placeholder="Tüm makineler (yazarak ara)" autocomplete="off">
+      <datalist id="makineListe"></datalist>
+    </div>
+    <div>
+      <label for="birimSec">Birim</label>
+      <select id="birimSec">
+        <option value="">Tüm birimler</option>
+        <option value="elektrik">Elektrik</option>
+        <option value="mekanik">Mekanik</option>
+        <option value="dis">Dış Servis</option>
+        <option value="isg">İş Güvenliği</option>
+        <option value="yok">Birim belirtilmemiş</option>
+      </select>
+    </div>
+  </div>
+  <div id="tarihAraligi" class="tarih-araligi">
+    <div><label for="basTarih">Başlangıç</label><input id="basTarih" type="date"></div>
+    <div><label for="bitTarih">Bitiş</label><input id="bitTarih" type="date"></div>
+  </div>
+  <div id="donemBilgi" class="donem-bilgi"></div>
+  <button id="temizleBtn" class="secondary" type="button" style="width:auto;padding:8px 14px;font-size:13px">Filtreleri Temizle</button>
+</section>
+
+<!-- 2. Rapor başlığı ve özet -->
+<section class="card">
+  <div class="rapor-baslik">
+    <h2>HAFTALIK BAKIM KONTROL FORMU</h2>
+    <span>Bakımı yapan: <b id="bBakimYapan">Tüm kişiler</b></span>
+    <span>Dönem: <b id="bDonem">-</b></span>
+    <span>Rapor tarihi: <b id="bTarih">-</b></span>
+  </div>
+  <div class="ozet">
+    <div class="kutu mavi"><b id="sPlan">0</b><small>Planlanan bakım</small></div>
+    <div class="kutu yesil"><b id="sYapilan">0</b><small>Yapılan</small></div>
+    <div class="kutu turuncu"><b id="sBekleyen">0</b><small>Bekleyen</small></div>
+    <div class="kutu yesil"><b id="sUygun">0</b><small>UYGUN</small></div>
+    <div class="kutu kirmizi"><b id="sRed">0</b><small>RED</small></div>
+    <div class="kutu mavi"><b id="sOran">%0</b><small>Tamamlanma oranı</small></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="bolum-ust"><h2>Makine Bazında</h2><small>Kırmızı satır: bu dönemde hiç bakım yapılmamış</small></div>
+  <div class="tablo-kap"><table class="rapor" id="makineTablo"></table></div>
+</section>
+
+<section class="card">
+  <div class="bolum-ust"><h2>Birim Bazında</h2></div>
+  <div class="tablo-kap"><table class="rapor" id="birimTablo"></table></div>
+</section>
+
+<section class="card">
+  <div class="bolum-ust"><h2>Açık Arızalar (RED)</h2><small id="arizaSayi"></small></div>
+  <div id="arizaListe"></div>
+</section>
+
+<section class="card">
+  <div class="bolum-ust"><h2>Detaylı Kayıt Listesi</h2><small id="detaySayi"></small></div>
+  <input id="detayAra" class="detay-ara" placeholder="Listede ara: makine, bakım, operatör, açıklama">
+  <div class="tablo-kap"><table class="rapor" id="detayTablo"></table></div>
+  <div id="msg"></div>
+</section>
+</main>
+
+<!-- Mail penceresi -->
+<div id="mailModal" class="mail-modal hide">
+  <div class="mail-kart">
+    <h2>📧 PDF Mail Gönder</h2>
+    <div id="mailOzet" class="mail-ozet"></div>
+    <div id="mailSonuc" class="mail-sonuc"></div>
+    <div class="mail-butonlar">
+      <button id="mailOnay" type="button">Gönder</button>
+      <button id="mailKapat" class="secondary" type="button">Vazgeç</button>
+    </div>
+  </div>
+</div>
+
+<iframe name="mailFrame" class="hide" title="Mail"></iframe>
+<form id="mailForm" target="mailFrame" method="post" class="hide">
+  <input name="action" value="sendReportMail">
+  <input name="html" id="mHtml">
+  <input name="operator" id="mOperator">
+  <input name="fileName" id="mFileName">
+  <input name="subject" id="mSubject">
+</form>
+
+<div id="loader" class="overlay"><div class="modal"><img src="AKGLOG.png" alt="AKG"><h2>Rapor hazırlanıyor</h2><p id="loadText">Veriler alınıyor...</p><div class="track"><div id="bar"></div></div><b id="percent">0%</b><button id="retryBtn" class="hide">Tekrar Dene</button></div></div>
+
+<script src="net.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   Bakım Raporları V5.4.39
+   - Tüm giriş yapmış kullanıcılar görebilir.
+   - V5.4.39: "Bakımı Yapan" filtresi, rapor başlığında bakımı yapan,
+     seçilen kişinin raporunu PDF olarak "veri" sayfasındaki MAİL ADRESİ
+     sütunundaki tüm adreslere gönderme.
+     PDF adı: HAFTALIK BAKIM KONTROL FORMU - ENGİN_VARDAR - 30.09.2026.pdf
+   - Gerekli: Code.gs'e sendReportMail_ eklenmeli (CODE_GS_MAIL_EKLEME.gs).
+   - V5.4.40: "Bakımı Yapan" sorulmaz; oturumu açan kişi otomatik kullanılır.
+     Rapor yalnızca o kişinin kayıtlarını gösterir ve mail o kişi adına gider.
+   ===================================================================== */
+const SESSION = CMMS.SESSION, $ = id => document.getElementById(id);
+let kayitlar = [], bakimlar = [], sonDetay = [], sonHesap = null, mailBekliyor = false, mailZaman = null;
+
+const BIRIMLER = [
+  { deger:'ELEKTRİK',     ad:'Elektrik',     kod:'elektrik', renk:'#FFFF66' },
+  { deger:'MEKANİK',      ad:'Mekanik',      kod:'mekanik',  renk:'#66FFFF' },
+  { deger:'DIŞ SERVİS',   ad:'Dış Servis',   kod:'dis',      renk:'#D6C1A6' },
+  { deger:'İŞ GÜVENLİĞİ', ad:'İş Güvenliği', kod:'isg',      renk:'#FF5B3A' }
+];
+function birimAnahtar(v){ return String(v||'').toLocaleUpperCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,''); }
+function birimBul(v){ const k = birimAnahtar(v); return k ? (BIRIMLER.find(b => birimAnahtar(b.deger) === k) || null) : null; }
+function esc(v){ return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function ara(v){ return String(v||'').toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').trim(); }
+function redMi(r){ return String(r||'').toLocaleUpperCase('tr').indexOf('RED') > -1; }
+
+/* ---------- Tarih ---------- */
+function tarihCevir(v){
+  if(v instanceof Date) return v;
+  const raw = String(v||'').trim();
+  if(!raw) return new Date(NaN);
+  let m = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m) return new Date(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+  m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m) return new Date(+m[1], +m[2]-1, +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+  return new Date(raw);
+}
+function gun(d){ const x = new Date(d); x.setHours(0,0,0,0); return x; }
+function pazartesi(d){ const x = gun(d); x.setDate(x.getDate() - ((x.getDay()||7) - 1)); return x; }
+function ekle(d, n){ const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function iki(n){ return String(n).padStart(2,'0'); }
+function tarihYaz(d, saat){
+  d = tarihCevir(d);
+  if(isNaN(d.getTime())) return '-';
+  return iki(d.getDate())+'.'+iki(d.getMonth()+1)+'.'+d.getFullYear() + (saat ? ' '+iki(d.getHours())+':'+iki(d.getMinutes()) : '');
+}
+function inputTarih(d){ return d.getFullYear()+'-'+iki(d.getMonth()+1)+'-'+iki(d.getDate()); }
+function haftaNormalle(weekKey, createdAt){
+  const raw = String(weekKey||'').trim();
+  if(/^\d{4}-W\d{2}$/i.test(raw)) return raw.toUpperCase();
+  const c = tarihCevir(createdAt);
+  if(!isNaN(c.getTime())) return CMMS.weekKey(c);
+  const d = tarihCevir(raw);
+  return isNaN(d.getTime()) ? '' : CMMS.weekKey(d);
+}
+function donemHesapla(){
+  const bugun = gun(new Date());
+  let bas, bit;
+  switch($('donemSec').value){
+    case 'gecen': bas = ekle(pazartesi(bugun), -7); bit = ekle(bas, 6); break;
+    case 'son4':  bas = ekle(pazartesi(bugun), -21); bit = ekle(pazartesi(bugun), 6); break;
+    case 'ay':    bas = new Date(bugun.getFullYear(), bugun.getMonth(), 1);
+                  bit = new Date(bugun.getFullYear(), bugun.getMonth() + 1, 0); break;
+    case 'ozel':
+      bas = $('basTarih').value ? tarihCevir($('basTarih').value) : pazartesi(bugun);
+      bit = $('bitTarih').value ? tarihCevir($('bitTarih').value) : bugun;
+      if(bit < bas){ const t = bas; bas = bit; bit = t; }
+      break;
+    default:      bas = pazartesi(bugun); bit = ekle(bas, 6);
+  }
+  const bitSon = new Date(bit); bitSon.setHours(23,59,59,999);
+  const haftalar = [];
+  for(let d = pazartesi(bas); d <= bitSon; d = ekle(d, 7)){
+    const k = CMMS.weekKey(d);
+    if(!haftalar.includes(k)) haftalar.push(k);
+  }
+  return { bas: gun(bas), bit: bitSon, haftalar };
+}
+
+/* ---------- Veri ---------- */
+function yukleme(p, t){ $('loader').classList.remove('hide'); $('bar').style.width = p+'%'; $('percent').textContent = p+'%'; $('loadText').textContent = t; }
+
+async function yukle(force){
+  $('retryBtn').classList.add('hide');
+  yukleme(20, 'Kayıtlar, bakımlar ve makineler alınıyor...');
+  try{
+    const [r, t, m] = await Promise.all([
+      CMMS.call('listMaintenanceRecords', {}, { timeout: 25000 }),
+      force ? CMMS.call('listMaintenanceTemplatesCached') : CMMS.cachedCall('listMaintenanceTemplatesCached', {}, { ttl: 300000 }),
+      (force ? CMMS.call('listMachinesCached') : CMMS.cachedCall('listMachinesCached', {}, { ttl: 900000 })).catch(() => null)
+    ]);
+    if(!r || !r.success) throw new Error((r && r.message) || 'Kayıtlar alınamadı.');
+    if(!t || !t.success) throw new Error((t && t.message) || 'Bakım tanımları alınamadı.');
+    yukleme(70, 'Rapor hesaplanıyor...');
+
+    const makineHarita = {};
+    ((m && m.success) ? (m.machines || []) : []).forEach(x => { makineHarita[x.id] = x.machineName; });
+    bakimlar = (t.templates || []).map(x => ({ ...x, birim: birimBul(x.system) }));
+    const bakimHarita = {};
+    bakimlar.forEach(b => { bakimHarita[b.templateId] = b; });
+
+    kayitlar = (r.records || []).map(x => {
+      const b = bakimHarita[x.templateId] || {};
+      const t0 = tarihCevir(x.createdAt);
+      return {
+        recordId: x.recordId || '',
+        templateId: x.templateId || '',
+        machineName: x.machineName || b.machineName || makineHarita[x.machineId] || '-',
+        bakim: b.task || '',
+        birim: b.birim || null,
+        operator: String(x.operator || '').trim() || '-',
+        sonuc: redMi(x.result) ? 'RED' : 'UYGUN',
+        olculen: x.measuredValue || '',
+        istenen: b.targetValue || '',
+        aciklama: x.description || '',
+        foto: x.proofImageUrl || '',
+        tarih: t0,
+        zaman: isNaN(t0.getTime()) ? 0 : t0.getTime(),
+        hafta: haftaNormalle(x.weekKey, x.createdAt)
+      };
+    });
+
+    /* V5.4.40: Bakımı yapan = oturumu açan kişi */
+    $('operatorSec').value = oturumKisi();
+
+    $('makineListe').innerHTML = [...new Set(bakimlar.map(b => b.machineName).filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b,'tr')).map(a => `<option value="${esc(a)}">`).join('');
+
+    yukleme(100, 'Hazır.');
+    $('loader').classList.add('hide');
+    hesaplaVeCiz();
+  }catch(e){
+    $('loadText').textContent = e.message;
+    $('retryBtn').classList.remove('hide');
+  }
+}
+
+/* ---------- Filtre ---------- */
+function makineUyar(ad){ const q = ara($('makineAra').value); return !q || ara(ad).includes(q); }
+function birimUyar(b){
+  const f = $('birimSec').value;
+  if(!f) return true;
+  if(f === 'yok') return !b;
+  return !!b && b.kod === f;
+}
+/* V5.4.40: Oturumu açan kişi */
+function oturumKisi(){
+  try{ const u = JSON.parse(sessionStorage.getItem(SESSION)||'null') || {}; return String(u.operator || u.name || u.fullName || '').trim(); }
+  catch(e){ return ''; }
+}
+function kisiAnahtar(v){ return ara(v).replace(/\s+/g,' '); }
+function operatorUyar(o){ const f = oturumKisi(); return !f || kisiAnahtar(o) === kisiAnahtar(f); }
+
+/* ---------- Hesap ve çizim ---------- */
+function hesaplaVeCiz(){
+  const donem = donemHesapla();
+  const hs = donem.haftalar;
+  const kisi = oturumKisi();
+  $('donemBilgi').textContent = 'Dönem: ' + tarihYaz(donem.bas) + ' - ' + tarihYaz(donem.bit) + '  (' + hs.length + ' hafta: ' + hs.join(', ') + ')';
+  $('bBakimYapan').textContent = kisi || 'Tüm kişiler';
+  $('bDonem').textContent = tarihYaz(donem.bas) + ' - ' + tarihYaz(donem.bit);
+  $('bTarih').textContent = tarihYaz(new Date());
+
+  $('mailBtn').disabled = !kisi;
+  $('mailBtn').title = kisi ? kisi + ' raporunu PDF olarak gönder' : 'Oturum bilgisi bulunamadı, yeniden giriş yapın';
+
+  const plan = bakimlar.filter(b => b.active && makineUyar(b.machineName) && birimUyar(b.birim));
+  const planIds = new Set(plan.map(b => b.templateId));
+
+  const donemKayit = kayitlar.filter(k => {
+    const icinde = k.zaman ? (k.tarih >= donem.bas && k.tarih <= donem.bit) : hs.includes(k.hafta);
+    return icinde && makineUyar(k.machineName) && birimUyar(k.birim) && operatorUyar(k.operator);
+  }).sort((a,b) => b.zaman - a.zaman);
+
+  const sonKayit = {};
+  donemKayit.forEach(k => {
+    if(!planIds.has(k.templateId)) return;
+    const a = k.templateId + '|' + k.hafta;
+    if(!sonKayit[a] || sonKayit[a].zaman < k.zaman) sonKayit[a] = k;
+  });
+  const yapilanlar = Object.values(sonKayit);
+
+  const planSayi = plan.length * hs.length;
+  const yapilan = yapilanlar.length;
+  const red = yapilanlar.filter(k => k.sonuc === 'RED').length;
+  const oran = planSayi ? Math.round(yapilan / planSayi * 100) : 0;
+
+  $('sPlan').textContent = planSayi;
+  $('sYapilan').textContent = yapilan;
+  $('sBekleyen').textContent = Math.max(planSayi - yapilan, 0);
+  $('sUygun').textContent = yapilan - red;
+  $('sRed').textContent = red;
+  $('sOran').textContent = '%' + oran;
+
+  sonHesap = { donem, kisi, planSayi, yapilan, red, uygun: yapilan - red, oran, plan, yapilanlar, hafta: hs.length };
+  makineTablosu(plan, yapilanlar, hs.length);
+  birimTablosu(plan, yapilanlar, hs.length);
+  arizalar(donemKayit);
+  sonDetay = donemKayit;
+  detayCiz();
+}
+
+function oranHtml(y, p){
+  const o = p ? Math.round(y / p * 100) : 0;
+  const renk = o >= 90 ? '#167a42' : o >= 50 ? '#e09a00' : '#b11f2e';
+  return `<div class="oran"><div class="cubuk"><i style="width:${Math.min(o,100)}%;background:${renk}"></i></div><b>%${o}</b></div>`;
+}
+
+function makineSatirlari(plan, yapilanlar, hafta){
+  const g = {}, idMakine = {};
+  plan.forEach(b => {
+    const ad = b.machineName || b.machineId;
+    idMakine[b.templateId] = ad;
+    (g[ad] = g[ad] || { ad, bakim:0, yapilan:0, red:0 }).bakim++;
+  });
+  yapilanlar.forEach(k => {
+    const ad = idMakine[k.templateId];
+    if(!g[ad]) return;
+    g[ad].yapilan++;
+    if(k.sonuc === 'RED') g[ad].red++;
+  });
+  return Object.values(g).sort((a,b) => (a.yapilan/(a.bakim*hafta||1)) - (b.yapilan/(b.bakim*hafta||1)) || a.ad.localeCompare(b.ad,'tr'));
+}
+function makineTablosu(plan, yapilanlar, hafta){
+  const satirlar = makineSatirlari(plan, yapilanlar, hafta);
+  $('makineTablo').innerHTML = '<tr><th>Makine</th><th class="sayi">Bakım</th><th class="sayi">Planlanan</th><th class="sayi">Yapılan</th><th class="sayi">Bekleyen</th><th class="sayi">RED</th><th>Tamamlanma</th></tr>' +
+    (satirlar.length ? satirlar.map(s => {
+      const p = s.bakim * hafta;
+      return `<tr class="${s.yapilan === 0 ? 'sifir' : ''}"><td><b>${esc(s.ad)}</b></td><td class="sayi">${s.bakim}</td><td class="sayi">${p}</td><td class="sayi">${s.yapilan}</td><td class="sayi">${Math.max(p - s.yapilan,0)}</td><td class="sayi">${s.red}</td><td>${oranHtml(s.yapilan, p)}</td></tr>`;
+    }).join('') : '<tr><td colspan="7">Filtreye uygun makine yok.</td></tr>');
+}
+
+function birimTablosu(plan, yapilanlar, hafta){
+  const g = {}, idBirim = {};
+  const anahtar = b => b ? b.kod : 'yok';
+  plan.forEach(b => {
+    const k = anahtar(b.birim);
+    idBirim[b.templateId] = k;
+    (g[k] = g[k] || { birim:b.birim, bakim:0, yapilan:0, red:0 }).bakim++;
+  });
+  yapilanlar.forEach(k => {
+    const a = idBirim[k.templateId];
+    if(!g[a]) return;
+    g[a].yapilan++;
+    if(k.sonuc === 'RED') g[a].red++;
+  });
+  const satirlar = ['elektrik','mekanik','dis','isg','yok'].filter(k => g[k]).map(k => g[k]);
+  $('birimTablo').innerHTML = '<tr><th>Birim</th><th class="sayi">Bakım</th><th class="sayi">Planlanan</th><th class="sayi">Yapılan</th><th class="sayi">Bekleyen</th><th class="sayi">RED</th><th>Tamamlanma</th></tr>' +
+    (satirlar.length ? satirlar.map(s => {
+      const p = s.bakim * hafta;
+      return `<tr class="${s.birim ? 'birim-' + s.birim.kod : ''}"><td><b>${esc(s.birim ? s.birim.ad : 'Birim belirtilmemiş')}</b></td><td class="sayi">${s.bakim}</td><td class="sayi">${p}</td><td class="sayi">${s.yapilan}</td><td class="sayi">${Math.max(p - s.yapilan,0)}</td><td class="sayi">${s.red}</td><td>${oranHtml(s.yapilan, p)}</td></tr>`;
+    }).join('') : '<tr><td colspan="7">Filtreye uygun kayıt yok.</td></tr>');
+}
+
+function arizalar(donemKayit){
+  const acik = donemKayit.filter(k => k.sonuc === 'RED');
+  $('arizaSayi').textContent = acik.length + ' kayıt';
+  $('arizaListe').innerHTML = acik.length ? acik.map(k => `<div class="ariza">
+      <b>${esc(k.machineName)}${k.bakim ? ' — ' + esc(k.bakim) : ''}</b>
+      <small>${esc(tarihYaz(k.tarih, true))} · ${esc(k.operator)} · ${esc(k.birim ? k.birim.ad : 'Birim belirtilmemiş')} · ${esc(k.recordId)}</small>
+      ${k.olculen ? `<p><b style="display:inline">Ölçülen:</b> ${esc(k.olculen)}${k.istenen ? ' (İstenen: ' + esc(k.istenen) + ')' : ''}</p>` : ''}
+      ${k.aciklama ? `<p>${esc(k.aciklama)}</p>` : ''}
+    </div>`).join('') : '<div class="empty-state">Bu dönemde açık arıza yok. 👍</div>';
+}
+
+function detayListesi(){
+  const q = ara($('detayAra').value);
+  return q ? sonDetay.filter(k => ara([k.machineName,k.bakim,k.operator,k.aciklama,k.olculen,k.recordId,k.birim?k.birim.ad:''].join(' ')).includes(q)) : sonDetay;
+}
+function detayCiz(){
+  const l = detayListesi();
+  $('detaySayi').textContent = l.length + ' kayıt';
+  $('detayTablo').innerHTML = '<tr><th>Tarih</th><th>Makine</th><th>Bakım</th><th>Birim</th><th>Bakımı Yapan</th><th>Sonuç</th><th>Ölçülen</th><th>Açıklama</th><th>Foto</th></tr>' +
+    (l.length ? l.map(k => `<tr>
+      <td style="white-space:nowrap">${esc(tarihYaz(k.tarih, true))}</td>
+      <td>${esc(k.machineName)}</td>
+      <td>${esc(k.bakim || '-')}</td>
+      <td>${esc(k.birim ? k.birim.ad : '-')}</td>
+      <td>${esc(k.operator)}</td>
+      <td><span class="sonuc ${k.sonuc === 'RED' ? 'red' : 'uygun'}">${k.sonuc}</span></td>
+      <td>${esc(k.olculen || '-')}</td>
+      <td>${esc(k.aciklama || '-')}</td>
+      <td>${k.foto ? `<a class="foto-link" href="${esc(k.foto)}" target="_blank" rel="noopener">Aç</a>` : '-'}</td>
+    </tr>`).join('') : '<tr><td colspan="9">Bu dönemde kayıt yok.</td></tr>');
+}
+
+/* ---------- Excel (CSV) ---------- */
+function csvIndir(){
+  const l = detayListesi();
+  const hucre = v => '"' + String(v ?? '').replace(/"/g,'""').replace(/\r?\n/g,' ') + '"';
+  const satirlar = [['Tarih','Hafta','Makine','Bakım','Birim','Bakımı Yapan','Sonuç','İstenen','Ölçülen','Açıklama','Kayıt No','Fotoğraf']]
+    .concat(l.map(k => [tarihYaz(k.tarih, true), k.hafta, k.machineName, k.bakim, k.birim ? k.birim.ad : '', k.operator,
+      k.sonuc, k.istenen, k.olculen, k.aciklama, k.recordId, k.foto]));
+  const metin = '\uFEFF' + satirlar.map(s => s.map(hucre).join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([metin], { type:'text/csv;charset=utf-8' }));
+  a.download = 'bakim-raporu-' + inputTarih(new Date()) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* =====================================================================
+   V5.4.39 PDF MAİL
+   ===================================================================== */
+function dosyaAdi(kisi){
+  const ad = String(kisi).toLocaleUpperCase('tr').replace(/[\\\/:*?"<>|]/g,'').trim().replace(/\s+/g,'_');
+  return 'HAFTALIK BAKIM KONTROL FORMU - ' + ad + ' - ' + tarihYaz(new Date());
+}
+
+/* PDF'e dönüşecek sade HTML (Apps Script PDF motoru basit CSS destekler) */
+function pdfHtml(){
+  const h = sonHesap, l = detayListesi();
+  const td = 'border:1px solid #999;padding:4px 5px;font-size:9pt;vertical-align:top;';
+  const th = td + 'background:#0f4c81;color:#ffffff;font-weight:bold;text-align:left;';
+  const birimRenk = b => b ? (b.kod === 'isg' ? 'background:#FF5B3A;color:#fff;' : 'background:' + b.renk + ';') : '';
+  const ozet = [['Planlanan', h.planSayi], ['Yapılan', h.yapilan], ['Bekleyen', Math.max(h.planSayi - h.yapilan, 0)],
+                ['UYGUN', h.uygun], ['RED', h.red], ['Tamamlanma', '%' + h.oran]];
+  const makineler = makineSatirlari(h.plan, h.yapilanlar, h.hafta);
+
+  return '<html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;color:#111;">' +
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr>' +
+      '<td style="background:#0f4c81;color:#fff;padding:10px;font-size:15pt;font-weight:bold">HAFTALIK BAKIM KONTROL FORMU</td></tr>' +
+      '<tr><td style="padding:8px;border:1px solid #0f4c81;font-size:10pt">' +
+        '<b>Bakımı yapan:</b> ' + esc(h.kisi) + ' &nbsp;&nbsp;|&nbsp;&nbsp; ' +
+        '<b>Dönem:</b> ' + tarihYaz(h.donem.bas) + ' - ' + tarihYaz(h.donem.bit) + ' &nbsp;&nbsp;|&nbsp;&nbsp; ' +
+        '<b>Rapor tarihi:</b> ' + tarihYaz(new Date(), true) +
+      '</td></tr></table>' +
+
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:12px"><tr>' +
+      ozet.map(o => '<td style="' + td + 'text-align:center"><div style="font-size:14pt;font-weight:bold">' + o[1] + '</div><div style="font-size:8pt;color:#555">' + o[0] + '</div></td>').join('') +
+    '</tr></table>' +
+
+    '<div style="font-size:11pt;font-weight:bold;margin:6px 0">Makine Bazında</div>' +
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:12px"><tr>' +
+      ['Makine','Planlanan','Yapılan','Bekleyen','RED','%'].map(x => '<th style="' + th + '">' + x + '</th>').join('') + '</tr>' +
+      makineler.map(s => { const p = s.bakim * h.hafta; return '<tr>' +
+        '<td style="' + td + (s.yapilan === 0 ? 'background:#ffe0e0;' : '') + '">' + esc(s.ad) + '</td>' +
+        '<td style="' + td + 'text-align:right">' + p + '</td><td style="' + td + 'text-align:right">' + s.yapilan + '</td>' +
+        '<td style="' + td + 'text-align:right">' + Math.max(p - s.yapilan, 0) + '</td><td style="' + td + 'text-align:right">' + s.red + '</td>' +
+        '<td style="' + td + 'text-align:right">%' + (p ? Math.round(s.yapilan / p * 100) : 0) + '</td></tr>'; }).join('') +
+    '</table>' +
+
+    '<div style="font-size:11pt;font-weight:bold;margin:6px 0">Yapılan Kontroller (' + l.length + ')</div>' +
+    '<table style="width:100%;border-collapse:collapse"><tr>' +
+      ['Tarih','Makine','Bakım','Birim','İstenen','Ölçülen','Sonuç','Açıklama'].map(x => '<th style="' + th + '">' + x + '</th>').join('') + '</tr>' +
+      (l.length ? l.map(k => '<tr>' +
+        '<td style="' + td + 'white-space:nowrap">' + tarihYaz(k.tarih, true) + '</td>' +
+        '<td style="' + td + '">' + esc(k.machineName) + '</td>' +
+        '<td style="' + td + '">' + esc(k.bakim || '-') + '</td>' +
+        '<td style="' + td + birimRenk(k.birim) + '">' + esc(k.birim ? k.birim.ad : '-') + '</td>' +
+        '<td style="' + td + '">' + esc(k.istenen || '-') + '</td>' +
+        '<td style="' + td + '">' + esc(k.olculen || '-') + '</td>' +
+        '<td style="' + td + 'font-weight:bold;' + (k.sonuc === 'RED' ? 'background:#FF9999;color:#7a1414;' : 'background:#99FF99;color:#0d5c2c;') + '">' + k.sonuc + '</td>' +
+        '<td style="' + td + '">' + esc(k.aciklama || '-') + '</td></tr>').join('')
+        : '<tr><td colspan="8" style="' + td + '">Bu dönemde kayıt yok.</td></tr>') +
+    '</table>' +
+    '<p style="font-size:8pt;color:#666;margin-top:14px">Haftalık Bakım CMMS tarafından otomatik oluşturulmuştur.</p>' +
+    '</body></html>';
+}
+
+function mailAc(){
+  const kisi = oturumKisi();
+  if(!kisi || !sonHesap) return;
+  const ad = dosyaAdi(kisi);
+  $('mailOzet').innerHTML =
+    '<b>Bakımı yapan:</b> ' + esc(kisi) + '<br>' +
+    '<b>Dönem:</b> ' + tarihYaz(sonHesap.donem.bas) + ' - ' + tarihYaz(sonHesap.donem.bit) + '<br>' +
+    '<b>Kayıt sayısı:</b> ' + detayListesi().length + '<br>' +
+    '<b>Ek:</b> ' + esc(ad) + '.pdf<br>' +
+    '<b>Alıcılar:</b> veri sayfasındaki MAİL ADRESİ sütunundaki tüm adresler';
+  $('mailSonuc').textContent = '';
+  $('mailSonuc').className = 'mail-sonuc';
+  $('mailOnay').disabled = false;
+  $('mailOnay').textContent = 'Gönder';
+  $('mailModal').classList.remove('hide');
+}
+function mailKapat(){ if(mailBekliyor) return; $('mailModal').classList.add('hide'); }
+
+function mailGonder(){
+  const kisi = oturumKisi();
+  if(!kisi || mailBekliyor) return;
+  const ad = dosyaAdi(kisi);
+  mailBekliyor = true;
+  $('mailOnay').disabled = true;
+  $('mailOnay').textContent = 'Gönderiliyor... (en fazla 60 saniye)';
+  $('mailSonuc').textContent = '';
+  $('mailForm').action = CMMS.API_URL;
+  $('mHtml').value = pdfHtml();
+  $('mOperator').value = kisi;
+  $('mFileName').value = ad + '.pdf';
+  $('mSubject').value = ad;
+  $('mailForm').submit();
+  mailZaman = setTimeout(() => mailBitir(false, 'Sunucudan yanıt gelmedi. Maili gelen kutusundan kontrol edin; gelmediyse tekrar deneyin.'), 60000);
+}
+function mailBitir(ok, metin){
+  clearTimeout(mailZaman);
+  mailBekliyor = false;
+  $('mailSonuc').className = 'mail-sonuc ' + (ok ? 'ok' : 'hata');
+  $('mailSonuc').innerHTML = metin;
+  $('mailOnay').disabled = false;
+  $('mailOnay').textContent = ok ? 'Tekrar Gönder' : 'Tekrar Dene';
+}
+/* V5.4.41: Mail beklenirken sunucudan gelen HER cevabı göster.
+   Eski kod dağıtımdaysa sunucu "Geçersiz işlem" döner; artık bu görünür. */
+window.addEventListener('message', e => {
+  if(!e.data || typeof e.data !== 'object' || !String(e.data.source||'').startsWith('CMMS_APPS_SCRIPT')) return;
+  if(!mailBekliyor) return;
+  if(e.data.source !== 'CMMS_APPS_SCRIPT_MAIL'){
+    mailBitir(false, 'Sunucu mail işlemini tanımıyor: <b>' + esc(e.data.message || 'Geçersiz işlem') + '</b><br>' +
+      'Apps Script yeni sürüm olarak dağıtılmamış. Dağıtım → Dağıtımları yönet → kalem → Sürüm: Yeni sürüm → Dağıt.');
+    return;
+  }
+  if(e.data.success){
+    mailBitir(true, '✔ Mail gönderildi: ' + esc((e.data.recipients || []).join(', ')));
+  }else{
+    mailBitir(false, 'Gönderilemedi: ' + esc(e.data.message || 'Bilinmeyen hata'));
+  }
+});
+
+/* ---------- Olaylar ---------- */
+$('donemSec').onchange = () => {
+  const ozel = $('donemSec').value === 'ozel';
+  $('tarihAraligi').classList.toggle('goster', ozel);
+  if(ozel && !$('basTarih').value){
+    $('basTarih').value = inputTarih(ekle(pazartesi(new Date()), -21));
+    $('bitTarih').value = inputTarih(new Date());
+  }
+  hesaplaVeCiz();
+};
+['basTarih','bitTarih','birimSec'].forEach(id => $(id).onchange = hesaplaVeCiz);
+let zam = null;
+$('makineAra').oninput = () => { clearTimeout(zam); zam = setTimeout(hesaplaVeCiz, 200); };
+$('detayAra').oninput = detayCiz;
+$('temizleBtn').onclick = () => {
+  $('donemSec').value = 'bu'; $('makineAra').value = ''; $('birimSec').value = '';
+  $('detayAra').value = '';
+  $('tarihAraligi').classList.remove('goster');
+  hesaplaVeCiz();
+};
+$('yenileBtn').onclick = () => yukle(true);
+$('retryBtn').onclick = () => yukle(true);
+$('csvBtn').onclick = csvIndir;
+$('yazdirBtn').onclick = () => window.print();
+$('mailBtn').onclick = mailAc;
+$('mailOnay').onclick = mailGonder;
+$('mailKapat').onclick = mailKapat;
+$('homeBtn').onclick = () => location.replace('index.html?screen=home');
+$('exitBtn').onclick = () => {
+  if(!confirm('Sistemden çıkmak istiyor musunuz?')) return;
+  sessionStorage.removeItem(SESSION); CMMS.cacheClear(); location.replace('index.html');
+};
+
+if(!sessionStorage.getItem(SESSION)) location.replace('index.html');
+else { CMMS.warmUp(); yukle(false); }
+</script>
+</body></html>

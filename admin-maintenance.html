@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Admin Bakım Tanımı V5.4.27</title>
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="dns-prefetch" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="mobil-tasma-duzeltme.css">
+<style>
+/* =====================================================================
+   V5.4.27 - ADMIN EKRANI
+   Bu stiller diğer CSS dosyalarından sonra gelir ve onları geçersiz kılar.
+   ===================================================================== */
+
+/* ---------- Üst menü ---------- */
+body.admin-sayfa .admin-header{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:9px 16px;background:#0f4c81;color:#fff;max-width:100%}
+body.admin-sayfa .admin-identity{display:flex;align-items:center;gap:10px;min-width:0;overflow:hidden}
+body.admin-sayfa .admin-identity img{height:30px;width:auto;background:#fff;border-radius:6px;padding:3px 6px;flex:none}
+body.admin-sayfa .admin-identity div{min-width:0;overflow:hidden}
+body.admin-sayfa .admin-identity strong{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.admin-sayfa .admin-identity small{display:block;opacity:.8;font-size:11px}
+body.admin-sayfa .admin-menu{display:flex;gap:8px;flex:0 0 auto}
+
+/* ---------- Sayfa genişliği ---------- */
+body.admin-sayfa main{width:100% !important;max-width:960px !important;margin:0 auto !important;padding:18px 16px !important}
+body.admin-sayfa .card{padding:22px;border-radius:16px}
+
+/* ---------- Form ---------- */
+body.admin-sayfa .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px}
+body.admin-sayfa .form-grid .tam{grid-column:1 / -1}
+body.admin-sayfa label{margin-top:8px}
+body.admin-sayfa input,body.admin-sayfa select,body.admin-sayfa textarea{margin:6px 0}
+body.admin-sayfa textarea{min-height:80px}
+body.admin-sayfa .resim-alani{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-top:6px}
+body.admin-sayfa #preview{width:170px !important;height:120px !important;object-fit:cover;border:1px solid #dce5ef;border-radius:10px;background:#f4f7fb;flex:none}
+body.admin-sayfa .resim-bilgi{font-size:12px;color:#64748b;align-self:center}
+body.admin-sayfa .resim-bilgi.uyari{color:#b11f2e;font-weight:700}
+body.admin-sayfa .secenekler{display:flex;flex-wrap:wrap;gap:8px 24px;margin:14px 0 6px}
+body.admin-sayfa .checkline{display:flex;align-items:center;gap:9px;margin:0}
+body.admin-sayfa .checkline input{width:18px;height:18px;margin:0;flex:none}
+body.admin-sayfa .checkline label{margin:0;font-weight:600}
+body.admin-sayfa .form-butonlar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+body.admin-sayfa .form-butonlar button{flex:1 1 220px;margin:0}
+body.admin-sayfa .edit-mode{border:2px solid #0f4c81;border-radius:12px;padding:14px;background:#f7fafd}
+
+/* ---------- Liste başlığı ---------- */
+body.admin-sayfa .liste-ust{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+body.admin-sayfa .liste-ust h2{margin:0}
+body.admin-sayfa .liste-araclar{display:flex;gap:8px;flex-wrap:wrap}
+body.admin-sayfa .liste-araclar button{width:auto;margin:0;padding:9px 14px;font-size:14px}
+
+/* ---------- Liste arama ve özet ---------- */
+body.admin-sayfa .liste-filtre{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+body.admin-sayfa .liste-filtre input{flex:1 1 260px;margin:0}
+body.admin-sayfa .liste-ozet{font-size:13px;color:#64748b;font-weight:600}
+
+/* =====================================================================
+   AÇILIR-KAPANIR MAKİNE GRUPLARI
+   ===================================================================== */
+body.admin-sayfa details.machine-group{margin:8px 0;border:1px solid #dce5ef;border-radius:12px;overflow:hidden;background:#fff}
+body.admin-sayfa details.machine-group summary{
+  list-style:none;cursor:pointer;user-select:none;
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;background:#f2f6fb;
+}
+body.admin-sayfa details.machine-group summary::-webkit-details-marker{display:none}
+body.admin-sayfa details.machine-group summary:hover{background:#e8eff8}
+
+/* Ok simgesi */
+body.admin-sayfa .ok{width:22px;height:22px;flex:none;display:grid;place-items:center;
+  border-radius:6px;background:#fff;border:1px solid #dce5ef;transition:transform .2s ease}
+body.admin-sayfa .ok svg{width:14px;height:14px;fill:#0f4c81}
+body.admin-sayfa details[open] .ok{transform:rotate(90deg)}
+
+body.admin-sayfa .grup-ad{flex:1 1 auto;min-width:0;font-weight:800;color:#0f2d4d;font-size:15px;overflow-wrap:anywhere}
+body.admin-sayfa .grup-sayi{flex:none;padding:3px 10px;border-radius:99px;background:#fff;border:1px solid #dce5ef;
+  font-size:12px;font-weight:800;color:#0f4c81}
+body.admin-sayfa .grup-pasif{flex:none;padding:3px 9px;border-radius:99px;background:#f1f5f9;font-size:11px;font-weight:700;color:#94a3b8}
+body.admin-sayfa details[open] summary{border-bottom:1px solid #dce5ef}
+
+/* ---------- Bakım satırı ---------- */
+body.admin-sayfa .template-row{display:grid !important;grid-template-columns:64px minmax(0,1fr) auto;
+  align-items:center;gap:14px;padding:12px 14px;border-top:1px solid #eef2f6}
+body.admin-sayfa .template-row:first-of-type{border-top:0}
+body.admin-sayfa .template-row:hover{background:#fafcfe}
+body.admin-sayfa .template-row .thumb{width:64px !important;height:64px !important;max-width:64px !important;min-width:64px !important;
+  object-fit:cover !important;border:1px solid #dce5ef;border-radius:10px;background:#f4f7fb;display:block;cursor:zoom-in}
+body.admin-sayfa .template-row .thumb-bos{width:64px;height:64px;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc;
+  display:grid;place-items:center;color:#94a3b8;font-size:10px;text-align:center;line-height:1.2}
+body.admin-sayfa .template-row .info{min-width:0}
+body.admin-sayfa .template-row .info b{display:block;font-size:15px;color:#0f2d4d;line-height:1.3;overflow-wrap:anywhere}
+body.admin-sayfa .template-row .info small{display:block;color:#64748b;font-size:12.5px;line-height:1.4;overflow-wrap:anywhere}
+body.admin-sayfa .etiketler{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+body.admin-sayfa .etk{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;background:#eef3f9;color:#334155}
+body.admin-sayfa .etk.aktif{background:#e3f7ea;color:#167a42}
+body.admin-sayfa .etk.pasif{background:#f1f5f9;color:#94a3b8}
+body.admin-sayfa .etk.foto{background:#fff3dc;color:#8a5a00}
+
+/* ---------- Aranabilir makine seçimi (V5.4.26) ---------- */
+body.admin-sayfa .makine-secici{position:relative}
+body.admin-sayfa .makine-secici input{padding-right:44px}
+body.admin-sayfa .makine-secici input.secili{border-color:#167a42;background:#f3fbf6;font-weight:700}
+body.admin-sayfa .makine-temizle{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  width:30px;height:30px;margin:0;padding:0;border-radius:8px;background:#eef3f9;color:#475569;font-size:14px;line-height:1}
+body.admin-sayfa .makine-temizle:hover{background:#dde6f1}
+body.admin-sayfa .makine-liste{position:absolute;left:0;right:0;top:calc(100% - 2px);z-index:50;
+  max-height:320px;overflow-y:auto;background:#fff;border:1px solid #0f4c81;border-radius:0 0 11px 11px;
+  box-shadow:0 12px 28px #0f172a26}
+body.admin-sayfa .makine-oge{display:flex;justify-content:space-between;gap:12px;padding:10px 13px;cursor:pointer;border-top:1px solid #f1f5f9}
+body.admin-sayfa .makine-oge:first-child{border-top:0}
+body.admin-sayfa .makine-oge b{font-weight:700;color:#0f2d4d;overflow-wrap:anywhere}
+body.admin-sayfa .makine-oge small{color:#64748b;font-size:12px;text-align:right;flex:none;max-width:45%;overflow-wrap:anywhere}
+body.admin-sayfa .makine-oge mark{background:#fff3a3;color:inherit;padding:0 1px;border-radius:3px}
+body.admin-sayfa .makine-oge.aktif,body.admin-sayfa .makine-oge:hover{background:#e8f1fb}
+body.admin-sayfa .makine-bos{padding:14px;color:#94a3b8;font-size:13px;text-align:center}
+body.admin-sayfa .makine-secim-bilgi{font-size:12px;color:#64748b;margin-top:-2px}
+@media(max-width:520px){
+  body.admin-sayfa .makine-oge{flex-direction:column;gap:2px}
+  body.admin-sayfa .makine-oge small{text-align:left;max-width:none}
+}
+
+/* ---------- Bakımı yapan birim renkleri (V5.4.25) ----------
+   Elektrik #FFFF66 | Mekanik #66FFFF | Dış Servis #D6C1A6 | İş Güvenliği #FF5B3A */
+body.admin-sayfa .template-row.birim-elektrik{background:#FFFF66}
+body.admin-sayfa .template-row.birim-mekanik{background:#66FFFF}
+body.admin-sayfa .template-row.birim-dis{background:#D6C1A6}
+body.admin-sayfa .template-row.birim-isg{background:#FF5B3A}
+body.admin-sayfa .template-row[class*="birim-"]{border-top:1px solid #00000014}
+body.admin-sayfa .template-row[class*="birim-"]:hover{filter:brightness(.96)}
+/* Renkli satırda metinler okunaklı kalsın */
+body.admin-sayfa .template-row[class*="birim-"] .info b{color:#111827}
+body.admin-sayfa .template-row[class*="birim-"] .info small{color:#1f2937}
+body.admin-sayfa .template-row.birim-isg .info b,
+body.admin-sayfa .template-row.birim-isg .info small{color:#fff}
+body.admin-sayfa .template-row[class*="birim-"] .etk{background:#ffffffcc}
+body.admin-sayfa .template-row[class*="birim-"] .thumb{border-color:#00000026}
+
+/* Birim etiketi */
+body.admin-sayfa .etk.birim{border:1px solid #00000026;color:#111827}
+body.admin-sayfa .etk.birim.elektrik{background:#FFFF66 !important}
+body.admin-sayfa .etk.birim.mekanik{background:#66FFFF !important}
+body.admin-sayfa .etk.birim.dis{background:#D6C1A6 !important}
+body.admin-sayfa .etk.birim.isg{background:#FF5B3A !important;color:#fff}
+body.admin-sayfa .etk.birim.diger{background:#eef3f9 !important;color:#334155}
+
+/* Liste üstündeki renk açıklaması */
+body.admin-sayfa .birim-lejant{display:flex;flex-wrap:wrap;gap:12px;margin:4px 0 8px;font-size:12px;color:#475569;font-weight:600}
+body.admin-sayfa .birim-lejant span{display:flex;align-items:center;gap:6px}
+body.admin-sayfa .birim-lejant i{width:14px;height:14px;border-radius:4px;border:1px solid #00000026;display:inline-block}
+body.admin-sayfa .template-row .actions{display:flex;gap:8px}
+body.admin-sayfa .template-row .actions button{width:38px;height:38px;margin:0;padding:0;display:grid;place-items:center;border-radius:10px}
+body.admin-sayfa .template-row .actions svg{width:19px;height:19px;fill:#fff}
+body.admin-sayfa .btn-del{background:#b11f2e}
+body.admin-sayfa .btn-del:hover{background:#8f1824}
+
+/* Son eklenen/düzenlenen satırı kısa süre vurgula */
+@keyframes vurgu{0%{background:#fff7d6}100%{background:transparent}}
+body.admin-sayfa .template-row.vurgulu{animation:vurgu 2.2s ease}
+
+/* ---------- Resim büyütme ---------- */
+.resim-modal{position:fixed;inset:0;z-index:13000;display:flex;align-items:center;justify-content:center;padding:16px;background:#050d16f0}
+.resim-modal-kart{width:min(700px,100%);display:flex;flex-direction:column;gap:10px}
+.resim-modal-kart img{width:100%;max-height:78vh;object-fit:contain;border-radius:12px;background:#0b1626}
+.resim-modal-kart button{margin:0}
+
+/* ---------- Tablet ve telefon ---------- */
+@media(max-width:700px){
+  body.admin-sayfa main{padding:10px !important}
+  body.admin-sayfa .card{padding:16px 13px}
+  body.admin-sayfa .form-grid{grid-template-columns:1fr;gap:0}
+}
+@media(max-width:520px){
+  body.admin-sayfa .template-row{grid-template-columns:52px minmax(0,1fr);gap:10px}
+  body.admin-sayfa .template-row .thumb,
+  body.admin-sayfa .template-row .thumb-bos{width:52px !important;height:52px !important;max-width:52px !important;min-width:52px !important}
+  body.admin-sayfa .template-row .actions{grid-column:2;justify-content:flex-start}
+  body.admin-sayfa .liste-araclar{width:100%}
+  body.admin-sayfa .liste-araclar button{flex:1 1 auto}
+}
+</style>
+</head>
+<body class="admin-sayfa">
+<header class="admin-header">
+  <div class="admin-identity"><img src="AKGLOG.png" alt="AKG"><div><strong>Admin Bakım Tanımı</strong><small>V5.4.27</small></div></div>
+  <nav class="admin-menu">
+    <button id="homeBtn" class="icon-button" type="button" title="Ana Menü" aria-label="Ana Menü"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H4.5A1.5 1.5 0 0 1 3 19.5z"/></svg></button>
+    <button id="logoutBtn" class="icon-button exit-button" type="button" title="Çıkış" aria-label="Çıkış"><svg viewBox="0 0 24 24"><path d="M10 4H5v16h5v-2H7V6h3zm8.6 7-3.3-3.3 1.4-1.4L22.4 12l-5.7 5.7-1.4-1.4 3.3-3.3H10v-2z"/></svg></button>
+  </nav>
+</header>
+
+<main>
+<section class="card">
+  <h1 id="formTitle">Yeni Bakım Tanımı</h1>
+  <form id="form">
+    <div class="form-grid">
+      <div class="tam">
+        <label for="makineAra">Makine</label>
+        <!-- V5.4.26: Aranabilir makine seçimi. Gerçek değer gizli #machineSelect içinde tutulur. -->
+        <div class="makine-secici" id="makineSecici">
+          <input id="makineAra" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="Makine adı yazın veya listeden seçin"
+                 role="combobox" aria-expanded="false" aria-controls="makineListe">
+          <button id="makineTemizle" class="makine-temizle hide" type="button" title="Seçimi temizle" aria-label="Seçimi temizle">✕</button>
+          <div id="makineListe" class="makine-liste hide" role="listbox"></div>
+        </div>
+        <div id="makineSecimBilgi" class="makine-secim-bilgi"></div>
+        <select id="machineSelect" class="hide" tabindex="-1" aria-hidden="true"><option value="">Makine seçiniz</option></select>
+      </div>
+      <div><label for="region">Bölge</label><input id="region" placeholder="Bölge" required></div>
+      <div>
+        <!-- Değer E-Tablodaki "System" sütununa yazılır; Code.gs değişmez. -->
+        <label for="system">Bakımı Yapan Birim</label>
+        <select id="system" required>
+          <option value="">Birim seçiniz</option>
+          <option value="ELEKTRİK">Elektrik</option>
+          <option value="MEKANİK">Mekanik</option>
+          <option value="DIŞ SERVİS">Dış Servis</option>
+          <option value="İŞ GÜVENLİĞİ">İş Güvenliği</option>
+        </select>
+      </div>
+      <div><label for="part">Parça</label><input id="part" placeholder="Parça"></div>
+      <div><label for="targetValue">İstenen Değer</label><input id="targetValue" placeholder="İstenen değer"></div>
+      <div class="tam">
+        <label for="task">Yapılacak Bakım</label>
+        <textarea id="task" placeholder="Yapılacak bakım" required></textarea>
+      </div>
+      <div><label for="orderNo">Sıra No</label><input id="orderNo" type="number" min="1" value="1"></div>
+      <div><label for="referenceFile">Referans Resim</label><input id="referenceFile" type="file" accept="image/*"></div>
+      <div class="tam resim-alani">
+        <img id="preview" class="hidden" alt="Önizleme">
+        <div id="resimBilgi" class="resim-bilgi"></div>
+      </div>
+    </div>
+    <div class="secenekler">
+      <div class="checkline"><input id="photoRequired" type="checkbox"><label for="photoRequired">Operatörden kanıt fotoğrafı istensin</label></div>
+      <div class="checkline"><input id="active" type="checkbox" checked><label for="active">Aktif</label></div>
+    </div>
+    <div class="form-butonlar">
+      <button id="submitBtn" type="submit">Bakım Tanımını Kaydet</button>
+      <button id="cancelEditBtn" class="secondary hidden" type="button">Düzenlemeyi İptal Et</button>
+    </div>
+  </form>
+  <div id="msg"></div>
+</section>
+
+<section class="card">
+  <div class="liste-ust">
+    <h2>Kayıtlı Bakım Tanımları</h2>
+    <div class="liste-araclar">
+      <button id="acBtn" class="secondary" type="button">Tümünü Aç</button>
+      <button id="kapatBtn" class="secondary" type="button">Tümünü Kapat</button>
+      <button id="refreshBtn" class="secondary" type="button">Listeyi Yenile</button>
+      <button id="testBtn" class="secondary" type="button">Bağlantıyı Test Et</button>
+    </div>
+  </div>
+  <div class="liste-filtre">
+    <input id="listeAra" placeholder="Makine, bakım veya birim ara">
+    <span id="listeOzet" class="liste-ozet"></span>
+  </div>
+  <div class="birim-lejant">
+    <span><i style="background:#FFFF66"></i>Elektrik</span>
+    <span><i style="background:#66FFFF"></i>Mekanik</span>
+    <span><i style="background:#D6C1A6"></i>Dış Servis</span>
+    <span><i style="background:#FF5B3A"></i>İş Güvenliği</span>
+  </div>
+  <div id="machineGroups"></div>
+  <pre id="debug" class="hidden"></pre>
+</section>
+</main>
+
+<div id="resimModal" class="resim-modal hide">
+  <div class="resim-modal-kart">
+    <img id="resimBuyuk" alt="Referans resim">
+    <button id="resimKapat" class="secondary" type="button">Kapat</button>
+  </div>
+</div>
+
+<div id="adminLoader" class="overlay"><div class="modal"><img src="AKGLOG.png" alt="AKG"><h2 id="adminLoadTitle">Sistem yükleniyor</h2><p id="adminLoadText">Hazırlanıyor...</p><div class="track"><div id="adminBar"></div></div><b id="adminPercent">0%</b><button id="adminRetryBtn" class="hidden">Tekrar Dene</button></div></div>
+
+<iframe name="adminFrame" class="hide" title="Kayıt"></iframe>
+<form id="adminPostForm" target="adminFrame" method="post" class="hide"><input name="action" value="createMaintenanceTemplateWithImage"><input name="payload" id="adminPayload"><input name="imageBase64" id="adminBase64"><input name="imageName" id="adminImageName"><input name="imageType" id="adminImageType"></form>
+
+<script src="net.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   Admin Bakım Tanımı Paneli V5.4.27
+
+   V5.4.22'den farkı:
+   - Makine grupları açılır-kapanır. Başlangıçta hepsi kapalı.
+   - Tümünü Aç / Tümünü Kapat düğmeleri.
+   - Makine veya bakım adına göre arama. Arama yapılınca eşleşen gruplar açılır.
+   - Açık gruplar liste yenilendiğinde açık kalır.
+   - Kayıt veya düzenleme sonrası ilgili makinenin grubu açılır,
+     satır kısa süre vurgulanır.
+   - Grup başlığında pasif bakım sayısı ayrıca gösterilir.
+
+   Kayıt mantığı V5.4.21 ile aynıdır.
+   ===================================================================== */
+
+const API_URL = CMMS.API_URL, SESSION = CMMS.SESSION, $ = id => document.getElementById(id);
+const RESIM_MAX_PIKSEL = 1000;
+const RESIM_KALITE = 0.70;
+const BEKLEME_MS = 60000;
+
+let machines = [], templates = [], editingId = null, pendingSave = null, pendingTimer = null;
+let acikGruplar = new Set();      /* açık olan makine adları */
+let vurgulanacakId = null;        /* kayıt sonrası vurgulanacak bakım */
+let vurgulanacakMakine = null;    /* kayıt sonrası açılacak makine */
+
+/* ---------- Bakımı yapan birimler (V5.4.25) ---------- */
+const BIRIMLER = [
+  { deger:'ELEKTRİK',     ad:'Elektrik',     kod:'elektrik' },
+  { deger:'MEKANİK',      ad:'Mekanik',      kod:'mekanik'  },
+  { deger:'DIŞ SERVİS',   ad:'Dış Servis',   kod:'dis'      },
+  { deger:'İŞ GÜVENLİĞİ', ad:'İş Güvenliği', kod:'isg'      }
+];
+function birimAnahtar(v){
+  return String(v||'').toLocaleUpperCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,'');
+}
+function birimBul(v){
+  const k = birimAnahtar(v);
+  return k ? (BIRIMLER.find(b => birimAnahtar(b.deger) === k) || null) : null;
+}
+function birimEtiket(v){
+  const b = birimBul(v);
+  if(b) return `<span class="etk birim ${b.kod}">${esc(b.ad)}</span>`;
+  const ham = String(v||'').trim();
+  return `<span class="etk birim diger">${ham ? esc(ham) : 'Birim yok'}</span>`;
+}
+/* Eski serbest metin değerleri düzenlemede kaybolmasın */
+function birimSec(v){
+  const sel = $('system');
+  sel.querySelectorAll('option[data-gecici]').forEach(o => o.remove());
+  const b = birimBul(v);
+  if(b){ sel.value = b.deger; return; }
+  const ham = String(v||'').trim();
+  if(ham){
+    const o = document.createElement('option');
+    o.value = ham; o.textContent = ham + ' (eski kayıt)'; o.dataset.gecici = '1';
+    sel.appendChild(o); sel.value = ham;
+  }else sel.value = '';
+}
+
+function esc(v){ return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function jp(action,p={},o){ return CMMS.call(action,p,o); }
+function msg(text, cls){ $('msg').textContent = text || ''; $('msg').className = cls || ''; }
+function adminLoading(p, t){
+  $('adminLoader').classList.remove('hide');
+  $('adminBar').style.width = p + '%';
+  $('adminPercent').textContent = p + '%';
+  $('adminLoadText').textContent = t;
+}
+function closeAdminLoader(){ $('adminLoader').classList.add('hide'); }
+
+function guard(){
+  let user = null;
+  try{ user = JSON.parse(sessionStorage.getItem(SESSION) || 'null'); }catch(e){}
+  if(!user){ location.replace('index.html'); return false; }
+  if(!String(user.role || '').toLocaleLowerCase('tr').includes('admin')){
+    alert('Bu ekran için yönetici yetkisi gereklidir.');
+    location.replace('weekly-maintenance.html');
+    return false;
+  }
+  return true;
+}
+
+async function initializeAdminScreen(){
+  $('adminRetryBtn').classList.add('hidden');
+  $('adminLoadTitle').textContent = 'Sistem yükleniyor';
+  $('adminPercent').textContent = '0%';
+  $('adminBar').style.width = '0%';
+  $('adminBar').classList.remove('load-error');
+  try{
+    adminLoading(20, 'Makine listesi ve bakımlar aynı anda yükleniyor...');
+    const [mRes, lRes] = await Promise.allSettled([loadMachines(), list()]);
+    if(mRes.status === 'rejected') throw mRes.reason;
+    if(lRes.status === 'rejected') throw lRes.reason;
+    adminLoading(100, 'Sistem hazır.');
+    closeAdminLoader();
+  }catch(error){
+    $('adminLoadTitle').textContent = 'Sistem yüklenemedi';
+    $('adminLoadText').textContent = 'Bağlantı hatası: ' + (error.message || error);
+    $('adminPercent').textContent = 'Hata';
+    $('adminBar').style.width = '100%';
+    $('adminBar').classList.add('load-error');
+    $('adminRetryBtn').classList.remove('hidden');
+  }
+}
+
+function fillMachineSelect(r){
+  machines = r.machines || [];
+  const secili = $('machineSelect').value;
+  $('machineSelect').innerHTML = '<option value="">Makine seçiniz</option>' +
+    machines.map(x => `<option value="${esc(x.id)}">${esc(x.machineName)} | ${esc(x.costCenter||'')}</option>`).join('');
+  if(secili) $('machineSelect').value = secili;
+  makineSeciciGuncelle();
+  msg((r.count ?? machines.length) + ' makine yüklendi.', 'success');
+}
+
+/* =====================================================================
+   ARANABİLİR MAKİNE SEÇİMİ (V5.4.26)
+   Makine adı ve maliyet merkezinde arar. Türkçe karakter ve büyük/küçük
+   harf farkı yok sayılır. Birden fazla kelime yazılabilir.
+   Klavye: Aşağı/Yukarı ok ile gezinme, Enter ile seçme, Esc ile kapatma.
+   ===================================================================== */
+let makineSonuclar = [], makineAktif = -1;
+
+function aramaAnahtar(v){
+  return String(v||'').toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/ı/g,'i').replace(/\s+/g,' ').trim();
+}
+function vurgula(metin, q){
+  const m = String(metin||'');
+  if(!q) return esc(m);
+  const anah = aramaAnahtar(m), i = anah.indexOf(q);
+  if(i < 0 || anah.length !== m.length) return esc(m);
+  return esc(m.slice(0,i)) + '<mark>' + esc(m.slice(i, i+q.length)) + '</mark>' + esc(m.slice(i+q.length));
+}
+function makineSonuclariniHesapla(){
+  const q = aramaAnahtar($('makineAra').value);
+  if(!q) return machines.slice();
+  const kelimeler = q.split(' ');
+  return machines.filter(m => {
+    const havuz = aramaAnahtar(m.machineName + ' ' + (m.costCenter||''));
+    return kelimeler.every(k => havuz.includes(k));
+  }).sort((a,b) => {
+    const A = aramaAnahtar(a.machineName).startsWith(q) ? 0 : 1;
+    const B = aramaAnahtar(b.machineName).startsWith(q) ? 0 : 1;
+    return A - B || a.machineName.localeCompare(b.machineName,'tr');
+  });
+}
+function makineListesiCiz(){
+  const q = aramaAnahtar($('makineAra').value);
+  makineSonuclar = makineSonuclariniHesapla();
+  if(makineAktif >= makineSonuclar.length) makineAktif = makineSonuclar.length - 1;
+  $('makineListe').innerHTML = makineSonuclar.length
+    ? makineSonuclar.map((m,i) => `<div class="makine-oge${i===makineAktif?' aktif':''}" role="option" data-i="${i}">
+        <b>${vurgula(m.machineName, q)}</b><small>${vurgula(m.costCenter||'', q)}</small></div>`).join('')
+    : '<div class="makine-bos">Bu isimde makine bulunamadı.</div>';
+  $('makineListe').querySelectorAll('.makine-oge').forEach(el => {
+    el.onmousedown = e => { e.preventDefault(); makineSec(makineSonuclar[+el.dataset.i]); };
+  });
+  $('makineSecimBilgi').textContent = q ? makineSonuclar.length + ' / ' + machines.length + ' makine' : '';
+}
+function makineListesiAc(){
+  makineListesiCiz();
+  $('makineListe').classList.remove('hide');
+  $('makineAra').setAttribute('aria-expanded','true');
+}
+function makineListesiKapat(){
+  $('makineListe').classList.add('hide');
+  $('makineAra').setAttribute('aria-expanded','false');
+  makineAktif = -1;
+}
+function makineSec(m){
+  if(!m) return;
+  $('machineSelect').value = m.id;
+  $('makineAra').value = m.machineName;
+  $('makineAra').classList.add('secili');
+  $('makineTemizle').classList.remove('hide');
+  $('makineSecimBilgi').textContent = m.costCenter ? 'Maliyet merkezi: ' + m.costCenter : '';
+  makineListesiKapat();
+  /* V5.4.27: Yeni kayıtta Sıra No = o makinedeki bakım sayısı + 1 */
+  if(!editingId){
+    const adet = templates.filter(t => t.machineId === m.id).length;
+    $('orderNo').value = adet + 1;
+    $('makineSecimBilgi').textContent += (m.costCenter ? ' | ' : '') + 'Bu makinede ' + adet + ' bakım var, yeni bakım ' + (adet + 1) + '. sırada.';
+  }
+}
+function makineSecimiTemizle(odakla){
+  $('machineSelect').value = '';
+  $('makineAra').value = '';
+  $('makineAra').classList.remove('secili');
+  $('makineTemizle').classList.add('hide');
+  $('makineSecimBilgi').textContent = '';
+  if(odakla){ $('makineAra').focus(); makineListesiAc(); }
+}
+/* Gizli seçimdeki değeri arama kutusuna yansıtır */
+function makineSeciciGuncelle(){
+  const m = machines.find(x => x.id === $('machineSelect').value);
+  if(m){
+    $('makineAra').value = m.machineName;
+    $('makineAra').classList.add('secili');
+    $('makineTemizle').classList.remove('hide');
+    $('makineSecimBilgi').textContent = m.costCenter ? 'Maliyet merkezi: ' + m.costCenter : '';
+  }else{
+    $('makineAra').value = '';
+    $('makineAra').classList.remove('secili');
+    $('makineTemizle').classList.add('hide');
+    $('makineSecimBilgi').textContent = '';
+  }
+}
+function aktifiGoster(){
+  const el = $('makineListe').querySelector('.makine-oge.aktif');
+  if(el) el.scrollIntoView({ block:'nearest' });
+}
+$('makineAra').addEventListener('input', () => {
+  $('machineSelect').value = '';
+  $('makineAra').classList.remove('secili');
+  $('makineTemizle').classList.toggle('hide', !$('makineAra').value);
+  makineAktif = 0;
+  makineListesiAc();
+});
+$('makineAra').addEventListener('focus', () => { if(!$('machineSelect').value) makineListesiAc(); });
+$('makineAra').addEventListener('click', () => makineListesiAc());
+$('makineAra').addEventListener('blur', () => {
+  setTimeout(() => {
+    makineListesiKapat();
+    if(!$('machineSelect').value && $('makineAra').value.trim()){
+      const q = aramaAnahtar($('makineAra').value);
+      const tam = machines.find(m => aramaAnahtar(m.machineName) === q);
+      if(tam) makineSec(tam);
+      else $('makineSecimBilgi').textContent = 'Listeden bir makine seçmelisiniz.';
+    }
+  }, 120);
+});
+$('makineAra').addEventListener('keydown', e => {
+  const acik = !$('makineListe').classList.contains('hide');
+  if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    if(!acik) return makineListesiAc();
+    makineAktif = Math.min(makineAktif + 1, makineSonuclar.length - 1);
+    makineListesiCiz(); aktifiGoster();
+  }else if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    makineAktif = Math.max(makineAktif - 1, 0);
+    makineListesiCiz(); aktifiGoster();
+  }else if(e.key === 'Enter'){
+    if(acik){ e.preventDefault(); makineSec(makineSonuclar[makineAktif >= 0 ? makineAktif : 0]); }
+  }else if(e.key === 'Escape'){
+    makineListesiKapat();
+  }
+});
+$('makineTemizle').onclick = () => makineSecimiTemizle(true);
+async function loadMachines(force){
+  try{
+    const r = force ? await jp('listMachinesCached')
+      : await CMMS.cachedCall('listMachinesCached', {}, { ttl:900000, onFresh:f=>fillMachineSelect(f) });
+    if(!r.success) throw Error(r.message);
+    fillMachineSelect(r);
+    return r;
+  }catch(e){ msg('Makine listesi yüklenemedi: ' + e.message, 'error'); throw e; }
+}
+
+async function list(force){
+  try{
+    const r = force ? await jp('listMaintenanceTemplatesCached')
+      : await CMMS.cachedCall('listMaintenanceTemplatesCached', {}, { ttl:300000, onFresh:f=>render(f.templates||[]) });
+    if(!r.success) throw Error(r.message);
+    $('debug').textContent = JSON.stringify(r, null, 2);
+    render(r.templates || []);
+    return r;
+  }catch(e){
+    msg('Bakım listesi yüklenemedi: ' + e.message, 'error');
+    $('machineGroups').innerHTML = '<div class="empty-state error">Liste yüklenemedi: ' + esc(e.message) + '</div>';
+    throw e;
+  }
+}
+
+/* =====================================================================
+   LİSTE ÇİZİMİ - AÇILIR-KAPANIR GRUPLAR
+   ===================================================================== */
+const OK_SVG = '<svg viewBox="0 0 24 24"><path d="M8.6 5.4 7.2 6.8 12.4 12l-5.2 5.2 1.4 1.4L15.2 12z"/></svg>';
+
+function satirHtml(t, i){
+  const no = i + 1;   /* V5.4.27: grup içindeki gerçek sıra */
+  const resim = t.referenceImageUrl
+    ? `<img class="thumb" loading="lazy" decoding="async" src="${esc(t.referenceImageUrl)}" data-buyuk="${esc(t.referenceImageUrl)}" alt="Referans">`
+    : `<div class="thumb-bos">Resim<br>yok</div>`;
+  const parca = t.part ? ' / ' + esc(t.part) : '';
+  const birim = birimBul(t.system);
+  return `<div class="template-row${birim ? ' birim-' + birim.kod : ''}" data-tid="${esc(t.templateId)}">
+    ${resim}
+    <div class="info">
+      <b>${no}. ${esc(t.task)}</b>
+      <small>Bölge: ${esc(t.region||'-')}${parca}</small>
+      <small>İstenen: ${esc(t.targetValue||'-')}</small>
+      <div class="etiketler">
+        ${birimEtiket(t.system)}
+        <span class="etk ${t.active?'aktif':'pasif'}">${t.active?'Aktif':'Pasif'}</span>
+        <span class="etk ${t.photoRequired?'foto':''}">${t.photoRequired?'Fotoğraf zorunlu':'Fotoğraf isteğe bağlı'}</span>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn-edit" data-id="${esc(t.templateId)}" title="Düzenle" aria-label="Düzenle"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75zM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z"/></svg></button>
+      <button type="button" class="btn-del" data-id="${esc(t.templateId)}" title="Sil" aria-label="Sil"><svg viewBox="0 0 24 24"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z"/></svg></button>
+    </div>
+  </div>`;
+}
+
+function render(items){
+  if(items) templates = items;
+
+  const q = $('listeAra').value.trim().toLocaleLowerCase('tr');
+
+  if(!templates.length){
+    $('machineGroups').innerHTML = '<div class="empty-state">Kayıtlı bakım tanımı yok.</div>';
+    $('listeOzet').textContent = '';
+    return;
+  }
+
+  /* Makineye göre grupla */
+  const groups = {};
+  templates.forEach(t => {
+    const key = t.machineName || t.machineId;
+    (groups[key] = groups[key] || []).push(t);
+  });
+
+  let gosterilenGrup = 0, gosterilenBakim = 0;
+
+  const html = Object.keys(groups).sort((a,b)=>a.localeCompare(b,'tr')).map(name => {
+    let satirlar = groups[name].slice().sort((a,b)=>(a.orderNo||1)-(b.orderNo||1));
+
+    /* Arama: makine adı eşleşirse tüm bakımlar, değilse yalnızca eşleşen bakımlar */
+    if(q){
+      const makineEslesti = name.toLocaleLowerCase('tr').includes(q);
+      if(!makineEslesti){
+        satirlar = satirlar.filter(t =>
+          (t.task + ' ' + t.region + ' ' + t.system + ' ' + ((birimBul(t.system)||{}).ad||'') + ' ' + (t.part||'')).toLocaleLowerCase('tr').includes(q));
+      }
+      if(!satirlar.length) return '';
+    }
+
+    gosterilenGrup++;
+    gosterilenBakim += satirlar.length;
+
+    const pasif = satirlar.filter(t => !t.active).length;
+    /* Arama varken eşleşen gruplar açık gelir; yoksa kullanıcının açtığı gruplar açık kalır */
+    const acik = q ? true : acikGruplar.has(name);
+
+    return `<details class="machine-group" data-makine="${esc(name)}"${acik ? ' open' : ''}>
+      <summary>
+        <span class="ok">${OK_SVG}</span>
+        <span class="grup-ad">${esc(name)}</span>
+        ${pasif ? `<span class="grup-pasif">${pasif} pasif</span>` : ''}
+        <span class="grup-sayi">${satirlar.length} bakım</span>
+      </summary>
+      ${satirlar.map((t,i) => satirHtml(t,i)).join('')}
+    </details>`;
+  }).join('');
+
+  $('machineGroups').innerHTML = html ||
+    '<div class="empty-state">Aramaya uygun kayıt bulunamadı.</div>';
+
+  $('listeOzet').textContent = q
+    ? gosterilenGrup + ' makine, ' + gosterilenBakim + ' bakım bulundu'
+    : gosterilenGrup + ' makine, ' + gosterilenBakim + ' bakım';
+
+  baglaOlaylari();
+  vurguUygula();
+}
+
+function baglaOlaylari(){
+  /* Açık/kapalı durumunu hatırla (yalnızca arama yokken) */
+  document.querySelectorAll('details.machine-group').forEach(d => {
+    d.addEventListener('toggle', () => {
+      if($('listeAra').value.trim()) return;
+      const ad = d.dataset.makine;
+      if(d.open) acikGruplar.add(ad); else acikGruplar.delete(ad);
+    });
+  });
+  document.querySelectorAll('.btn-edit').forEach(b => b.onclick = () => startEdit(b.dataset.id));
+  document.querySelectorAll('.btn-del').forEach(b => b.onclick = () => removeTemplate(b.dataset.id));
+  document.querySelectorAll('.template-row .thumb').forEach(img => img.onclick = () => {
+    $('resimBuyuk').src = img.dataset.buyuk;
+    $('resimModal').classList.remove('hide');
+  });
+}
+
+/* Kayıt/düzenleme sonrası ilgili grubu aç ve satırı vurgula */
+function vurguUygula(){
+  if(vurgulanacakMakine){
+    const d = [...document.querySelectorAll('details.machine-group')]
+      .find(x => x.dataset.makine === vurgulanacakMakine);
+    if(d){
+      d.open = true;
+      acikGruplar.add(vurgulanacakMakine);
+      d.scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+    vurgulanacakMakine = null;
+  }
+  if(vurgulanacakId){
+    const row = document.querySelector('.template-row[data-tid="' + CSS.escape(vurgulanacakId) + '"]');
+    if(row) row.classList.add('vurgulu');
+    vurgulanacakId = null;
+  }
+}
+
+function tumunuAyarla(ac){
+  document.querySelectorAll('details.machine-group').forEach(d => {
+    d.open = ac;
+    if(ac) acikGruplar.add(d.dataset.makine); else acikGruplar.delete(d.dataset.makine);
+  });
+}
+
+function makineAdi(id){
+  const m = machines.find(x => x.id === id);
+  return m ? m.machineName : '';
+}
+
+/* ---------- Form ---------- */
+function resetFields(){
+  $('form').reset();
+  birimSec('');
+  makineSecimiTemizle(false);
+  $('active').checked = true;
+  $('orderNo').value = 1;
+  $('preview').classList.add('hidden');
+  $('preview').removeAttribute('src');
+  $('resimBilgi').textContent = '';
+  $('resimBilgi').className = 'resim-bilgi';
+}
+function cancelEdit(){
+  editingId = null;
+  $('formTitle').textContent = 'Yeni Bakım Tanımı';
+  $('submitBtn').textContent = 'Bakım Tanımını Kaydet';
+  $('cancelEditBtn').classList.add('hidden');
+  $('form').classList.remove('edit-mode');
+  resetFields();
+}
+function startEdit(id){
+  const t = templates.find(x => x.templateId === id);
+  if(!t) return;
+  editingId = id;
+  $('formTitle').textContent = 'Bakım Tanımını Düzenle';
+  $('submitBtn').textContent = 'Değişiklikleri Kaydet';
+  $('cancelEditBtn').classList.remove('hidden');
+  $('form').classList.add('edit-mode');
+  $('machineSelect').value = t.machineId;
+  makineSeciciGuncelle();
+  $('region').value = t.region || '';
+  birimSec(t.system);
+  $('part').value = t.part || '';
+  $('task').value = t.task || '';
+  $('targetValue').value = t.targetValue || '';
+  $('orderNo').value = t.orderNo || 1;
+  $('photoRequired').checked = Boolean(t.photoRequired);
+  $('active').checked = Boolean(t.active);
+  $('referenceFile').value = '';
+  $('resimBilgi').textContent = '';
+  if(t.referenceImageUrl){ $('preview').src = t.referenceImageUrl; $('preview').classList.remove('hidden'); }
+  else $('preview').classList.add('hidden');
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+function compress(f){
+  return new Promise((ok,no)=>{
+    if(!f) return ok('');
+    const reader = new FileReader(), img = new Image();
+    reader.onerror = no;
+    reader.onload = e => { img.src = e.target.result; };
+    img.onerror = () => ok(String(reader.result).split(',')[1]);
+    img.onload = () => {
+      try{
+        const scale = Math.min(1, RESIM_MAX_PIKSEL / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * scale);
+        c.height = Math.round(img.height * scale);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        ok(c.toDataURL('image/jpeg', RESIM_KALITE).split(',')[1]);
+      }catch(err){ ok(String(reader.result).split(',')[1]); }
+    };
+    reader.readAsDataURL(f);
+  });
+}
+function base64KB(b64){ return b64 ? Math.round((b64.length * 3 / 4) / 1024) : 0; }
+
+function payload(){
+  return {
+    templateId: editingId || '',
+    machineId: $('machineSelect').value,
+    region: $('region').value.trim(),
+    system: $('system').value.trim(),
+    part: $('part').value.trim(),
+    task: $('task').value.trim(),
+    targetValue: $('targetValue').value.trim(),
+    orderNo: Number($('orderNo').value) || 1,
+    photoRequired: $('photoRequired').checked,
+    active: $('active').checked
+  };
+}
+
+async function save(e){
+  e.preventDefault();
+  if(pendingSave) return;
+  const data = payload();
+  if(!data.machineId){ $('makineAra').focus(); makineListesiAc(); return msg('Listeden bir makine seçiniz.', 'error'); }
+  if(!data.region) return msg('Bölge zorunludur.', 'error');
+  if(!data.system) return msg('Bakımı yapan birimi seçiniz.', 'error');
+  if(!data.task) return msg('Yapılacak bakım zorunludur.', 'error');
+  const file = $('referenceFile').files[0];
+
+  /* Düzenleme: resimsiz güncelleme */
+  if(editingId && !file){
+    try{
+      $('submitBtn').disabled = true;
+      msg('Güncelleniyor...', '');
+      const r = await jp('updateMaintenanceTemplate', { payload: JSON.stringify(data) });
+      if(!r.success) throw Error(r.message);
+      msg('Bakım tanımı güncellendi.', 'success');
+      vurgulanacakId = editingId;
+      vurgulanacakMakine = makineAdi(data.machineId);
+      cancelEdit();
+      CMMS.cacheClear();
+      await list(true);
+    }catch(err){ msg(err.message, 'error'); }
+    finally{ $('submitBtn').disabled = false; }
+    return;
+  }
+
+  if(!file && !editingId) return msg('Referans resim zorunludur.', 'error');
+
+  try{
+    $('submitBtn').disabled = true;
+    msg('Resim hazırlanıyor...', '');
+    const b64 = await compress(file);
+    const kb = base64KB(b64);
+    $('resimBilgi').textContent = 'Gönderilen resim boyutu: ' + kb + ' KB';
+    $('resimBilgi').className = 'resim-bilgi' + (kb > 900 ? ' uyari' : '');
+    msg('Gönderiliyor... (en fazla 60 saniye)', '');
+
+    pendingSave = { at: Date.now(), machineId: data.machineId, task: data.task, orderNo: data.orderNo };
+
+    $('adminPostForm').action = API_URL;
+    $('adminPayload').value = JSON.stringify(data);
+    $('adminBase64').value = b64;
+    $('adminImageName').value = file ? file.name.replace(/[^a-zA-Z0-9._-]/g,'_') : '';
+    $('adminImageType').value = file ? 'image/jpeg' : '';
+    $('adminPostForm').submit();
+
+    pendingTimer = setTimeout(async () => {
+      if(!pendingSave) return;
+      const bekleyen = pendingSave;
+      msg('Yanıt gecikti, kayıt kontrol ediliyor...', '');
+      try{
+        const kontrol = await jp('listMaintenanceTemplates', { machineId: bekleyen.machineId }, { retries: 0, timeout: 20000 });
+        const bulundu = kontrol && kontrol.success &&
+          (kontrol.templates || []).some(t =>
+            String(t.task || '').trim() === bekleyen.task &&
+            Number(t.orderNo || 1) === Number(bekleyen.orderNo));
+        pendingSave = null;
+        $('submitBtn').disabled = false;
+        if(bulundu){
+          msg('Bakım tanımı kaydedildi. (Yanıt gecikmeli geldi.)', 'success');
+          vurgulanacakMakine = makineAdi(bekleyen.machineId);
+          cancelEdit();
+          CMMS.cacheClear();
+          list(true);
+        }else{
+          msg('Kayıt doğrulanamadı. Listeyi yenileyip kontrol edin.', 'error');
+        }
+      }catch(err){
+        pendingSave = null;
+        $('submitBtn').disabled = false;
+        msg('Kayıt doğrulanamadı: ' + err.message, 'error');
+      }
+    }, BEKLEME_MS);
+
+  }catch(err){
+    pendingSave = null;
+    $('submitBtn').disabled = false;
+    msg(err.message, 'error');
+  }
+}
+
+window.addEventListener('message', e => {
+  if(!e.data || e.data.source !== 'CMMS_APPS_SCRIPT') return;
+  clearTimeout(pendingTimer);
+  $('submitBtn').disabled = false;
+  const bekleyen = pendingSave;
+  pendingSave = null;
+  if(e.data.success){
+    msg('Bakım tanımı kaydedildi.', 'success');
+    if(e.data.templateId) vurgulanacakId = e.data.templateId;
+    if(bekleyen) vurgulanacakMakine = makineAdi(bekleyen.machineId);
+    cancelEdit();
+    CMMS.cacheClear();
+    list(true);
+  }else{
+    msg(e.data.message || 'Kayıt başarısız.', 'error');
+  }
+});
+
+async function removeTemplate(id){
+  const t = templates.find(x => x.templateId === id);
+  if(!confirm('Bu bakım tanımı silinecek:\n\n' + (t ? t.task : id) + '\n\nOnaylıyor musunuz?')) return;
+  try{
+    const r = await jp('deleteMaintenanceTemplate', { templateId: id });
+    if(!r.success) throw Error(r.message);
+    msg('Bakım tanımı silindi.', 'success');
+    CMMS.cacheClear();
+    await list(true);
+  }catch(e){ msg(e.message, 'error'); }
+}
+
+/* ---------- Olaylar ---------- */
+$('cancelEditBtn').onclick = cancelEdit;
+$('referenceFile').onchange = async e => {
+  const f = e.target.files[0];
+  if(!f){ $('resimBilgi').textContent = ''; return; }
+  $('preview').src = URL.createObjectURL(f);
+  $('preview').classList.remove('hidden');
+  $('resimBilgi').textContent = 'Seçilen dosya: ' + Math.round(f.size/1024) + ' KB, hesaplanıyor...';
+  $('resimBilgi').className = 'resim-bilgi';
+  try{
+    const kb = base64KB(await compress(f));
+    $('resimBilgi').textContent = 'Seçilen dosya: ' + Math.round(f.size/1024) + ' KB → gönderilecek: ' + kb + ' KB';
+    $('resimBilgi').className = 'resim-bilgi' + (kb > 900 ? ' uyari' : '');
+  }catch(err){ $('resimBilgi').textContent = ''; }
+};
+$('form').onsubmit = save;
+
+let aramaZamanlayici = null;
+$('listeAra').oninput = () => {
+  clearTimeout(aramaZamanlayici);
+  aramaZamanlayici = setTimeout(() => render(), 180);
+};
+$('acBtn').onclick = () => tumunuAyarla(true);
+$('kapatBtn').onclick = () => tumunuAyarla(false);
+$('refreshBtn').onclick = () => { CMMS.cacheClear(); list(true); };
+$('testBtn').onclick = async () => {
+  const t0 = performance.now();
+  try{
+    const r = await jp('health', {}, { retries:0 });
+    $('debug').textContent = JSON.stringify(r, null, 2);
+    msg('Bağlantı başarılı: ' + r.version + ' (' + Math.round(performance.now()-t0) + ' ms)', 'success');
+  }catch(e){ msg(e.message, 'error'); }
+};
+$('resimKapat').onclick = () => { $('resimModal').classList.add('hide'); $('resimBuyuk').removeAttribute('src'); };
+$('resimModal').onclick = e => { if(e.target === $('resimModal')) $('resimKapat').click(); };
+$('homeBtn').onclick = () => location.replace('index.html?screen=home');
+$('logoutBtn').onclick = () => {
+  if(!confirm('Sistemden çıkmak istiyor musunuz?')) return;
+  sessionStorage.removeItem(SESSION);
+  CMMS.cacheClear();
+  location.replace('index.html');
+};
+$('adminRetryBtn').onclick = initializeAdminScreen;
+
+if(guard()){ CMMS.warmUp(); initializeAdminScreen(); }
+</script>
+</body></html>

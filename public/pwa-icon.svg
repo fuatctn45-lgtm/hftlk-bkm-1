@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1b283d" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0080d7" />
+      <stop offset="100%" stop-color="#00508c" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047" />
+      <stop offset="100%" stop-color="#eab308" />
+    </linearGradient>
+  </defs>
+
+  <!-- Dark Industrial Rounded Background -->
+  <rect width="512" height="512" rx="100" fill="url(#bgGrad)"/>
+  <rect x="8" y="8" width="496" height="496" rx="92" fill="none" stroke="#eab308" stroke-width="6" stroke-opacity="0.3"/>
+
+  <!-- Centered AKG Shield & Industrial Crest -->
+  <g transform="translate(186, 75)">
+    <!-- Radiator Top Cap -->
+    <rect x="46" y="0" width="48" height="12" rx="4" fill="#0080d7" stroke="#004070" stroke-width="3"/>
+    <!-- Main Tank Shield Shape -->
+    <path d="M 22 26 L 118 26 L 138 152 C 138 162, 128 168, 118 168 L 22 168 C 12 168, 2 162, 2 152 Z" fill="url(#shieldGrad)" stroke="#004070" stroke-width="5"/>
+    
+    <!-- White Inner Flame / Fin Blade -->
+    <path d="M 70 40 C 54 62, 48 88, 48 122 C 48 128, 58 128, 62 122 C 70 96, 84 72, 86 42 Z" fill="#ffffff" />
+    
+    <!-- 3 Wavy Fin Lines -->
+    <path d="M 16 132 Q 40 126, 64 132 T 112 132" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 16 146 Q 40 140, 64 146 T 112 146" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 16 160 Q 40 154, 64 160 T 112 160" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- Bold AKG Title -->
+  <text x="256" y="325" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="76" fill="#ffffff" text-anchor="middle" letter-spacing="4">
+    AKG
+  </text>
+
+  <!-- CMMS Subtitle with Yellow Badge -->
+  <g transform="translate(146, 355)">
+    <rect width="220" height="42" rx="12" fill="url(#goldGrad)"/>
+    <text x="110" y="29" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="22" fill="#000000" text-anchor="middle" letter-spacing="3">
+      BAKIM CMMS
+    </text>
+  </g>
+
+  <!-- Wrench Icon Accent -->
+  <g transform="translate(236, 425) scale(1.6)">
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" fill="#facc15"/>
+  </g>
+</svg>

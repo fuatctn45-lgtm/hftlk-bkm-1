@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#101828" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AKG Bakım" />
+    <title>AKG Haftalık Bakım CMMS V5.5.0</title>
+    <meta name="description" content="AKG Endüstriyel Soğutma Sistemleri Haftalık Bakım ve Bilgisayarlı Yönetim Sistemi (CMMS). Operatör paneli, QR doğrulama, RED arıza takibi, admin tanımları, raporlama ve arıza analizi." />
+    <meta property="og:title" content="AKG Haftalık Bakım CMMS V5.5.0" />
+    <meta property="og:description" content="AKG Endüstriyel Soğutma Sistemleri Haftalık Bakım ve Bilgisayarlı Yönetim Sistemi (CMMS). Operatör paneli, QR doğrulama, RED arıza takibi, admin tanımları, raporlama ve arıza analizi." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-slate-100 text-slate-800 antialiased selection:bg-sky-200">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (function() {
+        var isGitHub = window.location.hostname.includes('github.io') || window.location.protocol === 'file:';
+        function loadStatic() {
+          if (document.querySelector('script[src*="assets/index"]') || document.getElementById('cmms-prod-bundle')) {
+            return;
+          }
+          var css = document.createElement('link');
+          css.rel = 'stylesheet';
+          css.href = './assets/index.css';
+          document.head.appendChild(css);
+
+          var js = document.createElement('script');
+          js.id = 'cmms-prod-bundle';
+          js.type = 'module';
+          js.crossOrigin = 'anonymous';
+          js.src = './assets/index.js';
+          document.body.appendChild(js);
+        }
+
+        if (isGitHub) {
+          // If uncompiled source is served on GitHub Pages, fallback to compiled production assets
+          setTimeout(function() {
+            var root = document.getElementById('root');
+            if (root && (!root.children || root.children.length === 0) && !document.querySelector('script[src*="assets/index"]')) {
+              loadStatic();
+            }
+          }, 350);
+        }
+      })();
+    </script>
+  </body>
+</html>
+
