@@ -171,9 +171,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
         }}
         className={`group w-full p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer shadow-xs flex items-center justify-between gap-3 active:scale-[0.99] hover:shadow-md ${
           hasRed
-            ? 'bg-rose-950/25 border-rose-500/70 hover:border-rose-400 hover:bg-rose-950/35'
+            ? 'bg-rose-950/35 border-rose-500/80 hover:border-rose-400 hover:bg-rose-950/45 ring-1 ring-rose-500/30'
             : isAllDone
-            ? 'bg-emerald-950/20 border-emerald-500/50 hover:border-emerald-400 hover:bg-emerald-950/30'
+            ? 'bg-emerald-950/35 border-emerald-500/80 hover:border-emerald-400 hover:bg-emerald-950/45 ring-1 ring-emerald-500/30'
             : 'bg-[#1b263b] border-slate-700/80 hover:border-yellow-400 hover:bg-[#202e47]'
         }`}
       >

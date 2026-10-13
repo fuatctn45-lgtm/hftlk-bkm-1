@@ -77,7 +77,7 @@ export default function App() {
   const [allMachines, setAllMachines] = useState<Machine[]>(initialCachedMachines);
   const [templates, setTemplates] = useState<MaintenanceTemplate[]>(initialCachedTemplates);
   const [records, setRecords] = useState<MaintenanceRecord[]>(initialCachedRecords);
-  const [loading, setLoading] = useState(!hasCachedData);
+  const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<string>('');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -181,40 +181,7 @@ export default function App() {
     );
   }
 
-  // Logged in, but fresh cache loading: show fast loader with bypass buttons
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#131d2e] flex items-center justify-center p-4">
-        <div className="text-center space-y-4 bg-[#1b263b] p-8 rounded-3xl shadow-2xl border border-yellow-500/30 max-w-sm w-full animate-in fade-in duration-150">
-          <Loader2 className="w-10 h-10 animate-spin text-yellow-400 mx-auto" />
-          <div className="space-y-1">
-            <div className="text-base font-black text-white">
-              Google E-Tabloya Bağlanılıyor...
-            </div>
-            <div className="text-xs text-slate-400 font-medium">
-              Makineler, kontrol tanımları ve arıza kayıtları senkronize ediliyor.
-            </div>
-          </div>
-          <div className="pt-2 flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => setLoading(false)}
-              className="py-2.5 px-4 bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-black rounded-xl transition-all cursor-pointer shadow-md active:scale-95"
-            >
-              Devam Et (Önbellekle Aç)
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirmLogout}
-              className="py-2 px-3 text-slate-400 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
-            >
-              Giriş Ekranına Dön
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Logged in: Render Full Application immediately with live background sync
 
   // Logged in: Render Full Application with Responsive Header
   return (

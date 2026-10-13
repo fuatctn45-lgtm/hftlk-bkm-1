@@ -25,16 +25,19 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [sheetStatus, setSheetStatus] = useState<{ connected: boolean; version?: string } | null>(null);
+  const [sheetStatus, setSheetStatus] = useState<{ connected: boolean; version?: string }>({
+    connected: true,
+    version: 'V5.5.0',
+  });
   const [showKeypad, setShowKeypad] = useState(false);
 
-  // Check Google E-Tablo connection
+  // Check Google E-Tablo connection non-blockingly
   const verifySheetConnection = async () => {
     try {
       const res = await cmmsApi.checkConnection();
-      setSheetStatus({ connected: res.success, version: res.version });
+      setSheetStatus({ connected: res.success, version: res.version || 'V5.5.0' });
     } catch {
-      setSheetStatus({ connected: false });
+      setSheetStatus({ connected: false, version: 'V5.5.0' });
     }
   };
 
@@ -96,13 +99,11 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
 
           {/* Live Google E-Tablo Connection Indicator */}
           <div className="mt-3.5 inline-flex items-center gap-2 px-3 py-1 bg-[#1a2538] rounded-full text-xs font-bold text-yellow-400 border border-yellow-500/30 shadow-xs">
-            <span className={`w-2 h-2 rounded-full ${sheetStatus === null ? 'bg-amber-400 animate-ping' : sheetStatus.connected ? 'bg-yellow-400 animate-pulse' : 'bg-amber-500'}`} />
+            <span className={`w-2 h-2 rounded-full ${sheetStatus.connected ? 'bg-yellow-400 animate-pulse' : 'bg-amber-400'}`} />
             <span className="text-[11px] text-slate-200">
               Google E-Tablo:{' '}
-              <b className={sheetStatus?.connected ? 'text-yellow-400' : 'text-amber-300'}>
-                {sheetStatus === null
-                  ? 'Bağlanıyor...'
-                  : sheetStatus.connected
+              <b className={sheetStatus.connected ? 'text-yellow-400' : 'text-amber-300'}>
+                {sheetStatus.connected
                   ? `Bağlı (${sheetStatus.version || 'V5.5.0'})`
                   : 'Çevrimdışı / Hazır'}
               </b>

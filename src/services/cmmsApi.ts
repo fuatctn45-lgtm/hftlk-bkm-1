@@ -123,6 +123,20 @@ export const hasServerBackend = typeof window !== 'undefined' && (
   window.location.hostname.includes('run.app')
 );
 
+// Helper: safe timeout signal for older Android WebViews / mobile browsers lacking AbortSignal.timeout
+export function safeTimeoutSignal(ms: number): AbortSignal {
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(ms);
+  }
+  const controller = new AbortController();
+  setTimeout(() => {
+    try {
+      controller.abort();
+    } catch {}
+  }, ms);
+  return controller.signal;
+}
+
 /**
  * Direct Google Spreadsheet GViz JSONP Reader (Fallback)
  */
@@ -184,7 +198,7 @@ async function fetchGviz(sheetName: string, timeoutMs = 4500): Promise<any> {
   // 1. Primary: Direct Fetch with CORS (Ultra-fast ~200ms on Android, PWA, GitHub Pages)
   try {
     const res = await fetch(url, {
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: safeTimeoutSignal(timeoutMs),
       headers: { Accept: 'text/plain, application/json, */*' },
     });
     if (res.ok) {
@@ -388,7 +402,7 @@ async function callCmmsApi(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, ...params }),
-        signal: AbortSignal.timeout(options.timeout || 8000),
+        signal: safeTimeoutSignal(options.timeout || 8000),
       });
     } else {
       const query = new URLSearchParams();
@@ -400,7 +414,7 @@ async function callCmmsApi(
       }
 
       res = await fetch(`${LOCAL_PROXY_URL}?${query.toString()}`, {
-        signal: AbortSignal.timeout(options.timeout || 8000),
+        signal: safeTimeoutSignal(options.timeout || 8000),
       });
     }
 
@@ -440,7 +454,7 @@ export const cmmsApi = {
     if (hasServerBackend) {
       try {
         const res = await fetch(`${LOCAL_PROXY_URL}?action=health`, {
-          signal: AbortSignal.timeout(2000),
+          signal: safeTimeoutSignal(2000),
         });
         if (res.ok) {
           const data = await res.json();
@@ -877,7 +891,7 @@ export const cmmsApi = {
             imageName,
             imageType,
           }),
-          signal: AbortSignal.timeout(6000),
+          signal: safeTimeoutSignal(6000),
         });
 
         if (res.ok) {
@@ -940,7 +954,7 @@ export const cmmsApi = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ recordId }),
-          signal: AbortSignal.timeout(4000),
+          signal: safeTimeoutSignal(4000),
         });
         if (res.ok) {
           const json = await res.json().catch(() => null);
@@ -1245,7 +1259,7 @@ export const cmmsApi = {
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1J-4mdyEHUpytO7RNjp2q3dR6xCOszTGTpaWuN-MpxiQ/export?format=csv&gid=1253805957';
 
     try {
-      const res = await fetch(SHEET_CSV_URL, { signal: AbortSignal.timeout(6000) });
+      const res = await fetch(SHEET_CSV_URL, { signal: safeTimeoutSignal(6000) });
       if (res.ok) {
         const csv = await res.text();
         const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);

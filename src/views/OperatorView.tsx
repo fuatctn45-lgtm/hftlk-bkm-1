@@ -1096,12 +1096,12 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
                 <div
                   key={m.id}
                   onClick={() => handleSelectMachine(m)}
-                  className={`group bg-[#1b263b] p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer shadow-md flex flex-col justify-between active:scale-[0.98] ${
+                  className={`group p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer shadow-md flex flex-col justify-between active:scale-[0.98] ${
                     hasRed
-                      ? 'border-rose-500/70 hover:border-rose-400'
+                      ? 'bg-rose-950/30 border-rose-500/70 hover:border-rose-400 hover:bg-rose-950/40'
                       : isAllDone
-                      ? 'border-emerald-500/60 hover:border-emerald-400'
-                      : 'border-slate-800 hover:border-yellow-400'
+                      ? 'bg-emerald-950/30 border-emerald-500/60 hover:border-emerald-400 hover:bg-emerald-950/40'
+                      : 'bg-[#1b263b] border-slate-800 hover:border-yellow-400'
                   }`}
                 >
                   <div className="min-w-0 w-full mb-3">
@@ -1574,9 +1574,9 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
                 onClick={() => handleOpenTask(t)}
                 className={`relative overflow-hidden w-full p-3.5 sm:p-4 rounded-2xl border transition-all text-left flex items-start gap-3 sm:gap-4 cursor-pointer active:scale-[0.99] ${
                   st === 'red'
-                    ? 'bg-rose-950/35 border-rose-500/70 shadow-md shadow-rose-950/30'
+                    ? 'bg-rose-950/40 border-rose-500/80 shadow-md shadow-rose-950/30 ring-1 ring-rose-500/30'
                     : st === 'tamamlanan'
-                    ? 'bg-emerald-950/25 border-emerald-500/60 shadow-md shadow-emerald-950/30'
+                    ? 'bg-emerald-950/40 border-emerald-500/80 shadow-md shadow-emerald-950/30 ring-1 ring-emerald-500/30'
                     : deptStyle.cardBgClass
                 }`}
               >
@@ -1687,6 +1687,7 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
   const dept = getDepartmentConfig(selectedTask?.system);
   const deptStyle = getDeptDisplayStyle(dept);
   const isRed = result === 'RED';
+  const isOk = result === 'UYGUN';
   const descLength = description.trim().length;
   const isPhotoRequired = isTaskPhotoMandatory(selectedTask);
   const saveDisabled = saveLoading || (isPhotoRequired && !proofImage);
@@ -1696,7 +1697,15 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
       {renderBreadcrumbBar()}
 
       {/* Control Header Card */}
-      <div className="bg-[#1b263b] p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-md space-y-3">
+      <div
+        className={`p-4 sm:p-5 rounded-2xl border shadow-md space-y-3 transition-all duration-200 ${
+          isRed
+            ? 'bg-rose-950/30 border-rose-600/40'
+            : isOk
+            ? 'bg-emerald-950/30 border-emerald-500/40'
+            : 'bg-[#1b263b] border-slate-800'
+        }`}
+      >
         <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
           <div className="min-w-0">
             <span className="text-[11px] font-bold text-yellow-400 uppercase tracking-wider block truncate">
@@ -1785,11 +1794,13 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
         </div>
       </div>
 
-      {/* Control Execution Form (Sarı-Siyah / RED Seçildiğinde Gül-Kırmızı Arkaplan) */}
+      {/* Control Execution Form (RED Seçildiğinde Kırmızı, UYGUN Seçildiğinde Yeşil Renk) */}
       <div
         className={`p-4 sm:p-5 rounded-2xl border shadow-md space-y-4 transition-all duration-200 ${
           isRed
-            ? 'bg-rose-950/40 border-rose-600/50 shadow-rose-950/40'
+            ? 'bg-rose-950/45 border-rose-600/60 shadow-rose-950/40 ring-1 ring-rose-500/30'
+            : isOk
+            ? 'bg-emerald-950/45 border-emerald-500/60 shadow-emerald-950/40 ring-1 ring-emerald-500/30'
             : 'bg-[#1b263b] border-slate-800'
         }`}
       >
@@ -1899,10 +1910,12 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
                 ? 'Arızanın tanımı nedir? Hangi parçada hasar var? (En az 10 karakter)...'
                 : 'Açıklama veya ilave notlar (isteğe bağlı)...'
             }
-            className={`w-full px-3.5 py-2.5 bg-[#141d2d] border rounded-xl text-base sm:text-sm font-medium focus:outline-none transition-all text-white ${
-              isRed && descLength < 10
-                ? 'border-rose-500 focus:ring-2 focus:ring-rose-500'
-                : 'border-slate-700 focus:ring-2 focus:ring-yellow-400'
+            className={`w-full px-3.5 py-2.5 rounded-xl text-base sm:text-sm font-medium focus:outline-none transition-all text-white border ${
+              isRed
+                ? 'border-rose-500/80 focus:ring-2 focus:ring-rose-500 bg-rose-950/30'
+                : isOk
+                ? 'border-emerald-500/80 focus:ring-2 focus:ring-emerald-400 bg-emerald-950/30'
+                : 'border-slate-700 focus:ring-2 focus:ring-yellow-400 bg-[#141d2d]'
             }`}
           />
           {isRed && (
@@ -2050,7 +2063,7 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
           </div>
         )}
 
-        {/* Submit Save Button (Sarı-Siyah) */}
+        {/* Submit Save Button */}
         <button
           type="button"
           onClick={handleSaveControl}
@@ -2058,6 +2071,10 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
           className={`w-full py-4 px-6 rounded-2xl font-black text-base shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] ${
             saveDisabled
               ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+              : isOk
+              ? 'bg-emerald-400 hover:bg-emerald-300 text-black shadow-emerald-500/25 ring-2 ring-emerald-400/50'
+              : isRed
+              ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-500/25 ring-2 ring-rose-500/50'
               : 'bg-yellow-400 hover:bg-yellow-300 text-black shadow-yellow-500/25'
           }`}
         >
@@ -2070,8 +2087,14 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
             <span>📷 Önce Kanıt Fotoğrafı Çekiniz</span>
           ) : (
             <>
-              <span>Kontrolü Kaydet & Sonrakine Geç</span>
-              <ArrowRight className="w-5 h-5 text-black" />
+              <span>
+                {isOk
+                  ? '✔ UYGUN (OK) Olarak Kaydet & Sonrakine Geç'
+                  : isRed
+                  ? '⚠️ RED (Arıza) Olarak Kaydet & Bildir'
+                  : 'Kontrolü Kaydet & Sonrakine Geç'}
+              </span>
+              <ArrowRight className="w-5 h-5" />
             </>
           )}
         </button>
