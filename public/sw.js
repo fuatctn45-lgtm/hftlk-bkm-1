@@ -60,8 +60,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API calls & Google Apps Script: Network first
-  if (url.pathname.startsWith('/api/') || url.hostname.includes('google')) {
+  // Let browser handle external Google APIs & Fonts directly with zero SW latency
+  if (url.hostname.includes('google') || url.hostname.includes('gstatic')) {
+    return;
+  }
+
+  // Local server API calls: Network first
+  if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request).catch(() => {
         return caches.match(request);

@@ -96,10 +96,16 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
 
           {/* Live Google E-Tablo Connection Indicator */}
           <div className="mt-3.5 inline-flex items-center gap-2 px-3 py-1 bg-[#1a2538] rounded-full text-xs font-bold text-yellow-400 border border-yellow-500/30 shadow-xs">
-            <span className={`w-2 h-2 rounded-full ${sheetStatus?.connected ? 'bg-yellow-400 animate-pulse' : 'bg-amber-500'}`} />
+            <span className={`w-2 h-2 rounded-full ${sheetStatus === null ? 'bg-amber-400 animate-ping' : sheetStatus.connected ? 'bg-yellow-400 animate-pulse' : 'bg-amber-500'}`} />
             <span className="text-[11px] text-slate-200">
               Google E-Tablo:{' '}
-              <b className="text-yellow-400">{sheetStatus?.connected ? `Bağlı (${sheetStatus.version || 'v5.5.0'})` : 'Kontrol Ediliyor...'}</b>
+              <b className={sheetStatus?.connected ? 'text-yellow-400' : 'text-amber-300'}>
+                {sheetStatus === null
+                  ? 'Bağlanıyor...'
+                  : sheetStatus.connected
+                  ? `Bağlı (${sheetStatus.version || 'V5.5.0'})`
+                  : 'Çevrimdışı / Hazır'}
+              </b>
             </span>
             <button
               type="button"

@@ -82,6 +82,9 @@ export default function App() {
   const [lastSyncTime, setLastSyncTime] = useState<string>('');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  const [operatorInitialMachine, setOperatorInitialMachine] = useState<Machine | null>(null);
+  const [operatorInitialTemplateId, setOperatorInitialTemplateId] = useState<string | null>(null);
+
   // Clear legacy mock data once to ensure only real Google Sheet data is present
   useEffect(() => {
     localStorage.removeItem('cmmsRecords_V5442');
@@ -118,8 +121,20 @@ export default function App() {
     const existing = getStoredUser();
     if (existing) {
       setUser(existing);
+      loadData(false);
+    } else {
+      // If no session, never block the screen with a spinner
+      setLoading(false);
+      // Pre-warm data cache quietly in the background
+      loadData(false);
     }
-    loadData();
+
+    // Safety timeout: Never stay stuck on loading screen longer than 4 seconds
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 4000);
+
+    return () => clearTimeout(safetyTimer);
   }, []);
 
   const handleLoginSuccess = (loggedInUser: UserSession) => {
@@ -138,10 +153,17 @@ export default function App() {
     setUser(null);
     setCurrentScreen('home');
     setShowLogoutConfirm(false);
+    setLoading(false);
   };
 
   const handleManualSync = () => {
     loadData(true);
+  };
+
+  const handleSelectMachineFromHome = (m: Machine, templateId?: string) => {
+    setOperatorInitialMachine(m);
+    setOperatorInitialTemplateId(templateId || null);
+    setCurrentScreen('operator');
   };
 
   // Calculate current week's RED count for badge
@@ -150,36 +172,46 @@ export default function App() {
     (r) => normalizeWeekKey(r.weekKey, r.createdAt) === thisWeek && r.result === 'RED'
   ).length;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#131d2e] flex items-center justify-center p-4">
-        <div className="text-center space-y-3 bg-[#1b263b] p-8 rounded-3xl shadow-2xl border border-yellow-500/30 max-w-sm w-full">
-          <Loader2 className="w-10 h-10 animate-spin text-yellow-400 mx-auto" />
-          <div className="text-base font-black text-white">
-            Google E-Tabloya Bağlanılıyor...
-          </div>
-          <div className="text-xs text-slate-400 font-medium">
-            Makineler, kontrol tanımları ve arıza kayıtları senkronize ediliyor.
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const [operatorInitialMachine, setOperatorInitialMachine] = useState<Machine | null>(null);
-  const [operatorInitialTemplateId, setOperatorInitialTemplateId] = useState<string | null>(null);
-
-  const handleSelectMachineFromHome = (m: Machine, templateId?: string) => {
-    setOperatorInitialMachine(m);
-    setOperatorInitialTemplateId(templateId || null);
-    setCurrentScreen('operator');
-  };
-
-  // Not logged in: Show Login Screen
+  // Not logged in: Show Login Screen IMMEDIATELY (0ms start, never blocked on mobile/Android)
   if (!user) {
     return (
       <div className="min-h-screen bg-[#131d2e]">
         <LoginView onLoginSuccess={handleLoginSuccess} />
+      </div>
+    );
+  }
+
+  // Logged in, but fresh cache loading: show fast loader with bypass buttons
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#131d2e] flex items-center justify-center p-4">
+        <div className="text-center space-y-4 bg-[#1b263b] p-8 rounded-3xl shadow-2xl border border-yellow-500/30 max-w-sm w-full animate-in fade-in duration-150">
+          <Loader2 className="w-10 h-10 animate-spin text-yellow-400 mx-auto" />
+          <div className="space-y-1">
+            <div className="text-base font-black text-white">
+              Google E-Tabloya Bağlanılıyor...
+            </div>
+            <div className="text-xs text-slate-400 font-medium">
+              Makineler, kontrol tanımları ve arıza kayıtları senkronize ediliyor.
+            </div>
+          </div>
+          <div className="pt-2 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setLoading(false)}
+              className="py-2.5 px-4 bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-black rounded-xl transition-all cursor-pointer shadow-md active:scale-95"
+            >
+              Devam Et (Önbellekle Aç)
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmLogout}
+              className="py-2 px-3 text-slate-400 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+            >
+              Giriş Ekranına Dön
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
