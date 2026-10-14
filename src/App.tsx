@@ -29,15 +29,30 @@ function filterMachinesWithTasks(rawMachines: Machine[], rawTemplates: Maintenan
     activeTemplates.map((tmpl) => (tmpl.machineId || '').trim().toLowerCase()).filter(Boolean)
   );
 
-  const withTasks = rawMachines.filter((machine) => {
-    const nameMatch = machine.machineName && machineNamesWithTasks.has(machine.machineName.trim().toLowerCase());
-    const idMatch = machine.id && machineIdsWithTasks.has(machine.id.trim().toLowerCase());
-    const codeMatch = (machine.code || machine.machineCode) && (
-      machineIdsWithTasks.has((machine.code || '').trim().toLowerCase()) ||
-      machineIdsWithTasks.has((machine.machineCode || '').trim().toLowerCase())
-    );
-    return nameMatch || idMatch || codeMatch;
-  });
+  const withTasks = rawMachines
+    .filter((machine) => {
+      const nameMatch = machine.machineName && machineNamesWithTasks.has(machine.machineName.trim().toLowerCase());
+      const idMatch = machine.id && machineIdsWithTasks.has(machine.id.trim().toLowerCase());
+      const codeMatch = (machine.code || machine.machineCode) && (
+        machineIdsWithTasks.has((machine.code || '').trim().toLowerCase()) ||
+        machineIdsWithTasks.has((machine.machineCode || '').trim().toLowerCase())
+      );
+      return nameMatch || idMatch || codeMatch;
+    })
+    .map((machine) => {
+      if (!machine.costCenter || machine.costCenter === '#N/A' || machine.costCenter === 'MALİYET MER') {
+        const mName = (machine.machineName || '').trim().toLowerCase();
+        const mId = (machine.id || '').trim().toLowerCase();
+        const tmpl = activeTemplates.find((t) =>
+          (t.machineId && t.machineId.trim().toLowerCase() === mId) ||
+          (t.machineName && t.machineName.trim().toLowerCase() === mName)
+        );
+        if (tmpl && tmpl.costCenter && tmpl.costCenter !== '#N/A') {
+          return { ...machine, costCenter: tmpl.costCenter };
+        }
+      }
+      return machine;
+    });
 
   // Şablonda tanımlı olup makine listesinde adı geçen makineleri de dahil et
   for (const tmpl of activeTemplates) {

@@ -19,24 +19,20 @@ import {
   Layers,
 } from 'lucide-react';
 
-export type MachineGroup = '01-350522-Bakim ve Onarim & Üretim' | 'Üretim';
+export type MachineGroup = string;
 
-export const getMachineGroup = (m: Machine, costCenter?: string): MachineGroup => {
+export const getMachineGroup = (m: Machine, costCenter?: string): string => {
   const cc = (costCenter || m.costCenter || m.maliyetMerkezi || '').trim();
-  const name = (m.machineName || '').toUpperCase();
   if (
-    cc.includes('350522') ||
-    cc.toUpperCase().includes('BAKIM VE ONARIM') ||
-    cc.toUpperCase().includes('BAKIM') ||
-    name.includes('KOMPRESÖR') ||
-    name.includes('LUPAMAT') ||
-    name.includes('JENARATÖR') ||
-    name.includes('TEMİZ SU') ||
-    name.includes('DOĞAL GAZ')
+    cc &&
+    cc !== '#N/A' &&
+    cc.toUpperCase() !== 'MALİYET MER' &&
+    cc.toLowerCase() !== 'null' &&
+    cc.toLowerCase() !== 'undefined'
   ) {
-    return '01-350522-Bakim ve Onarim & Üretim';
+    return cc;
   }
-  return 'Üretim';
+  return 'Genel';
 };
 
 interface HomeViewProps {
@@ -63,7 +59,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed' | 'red'>('all');
-  const [selectedGroup, setSelectedGroup] = useState<'all' | '01-350522-Bakim ve Onarim & Üretim' | 'Üretim'>('all');
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
 
   // Accordion state: clicking a card opens its machine list
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
@@ -212,19 +208,31 @@ export const HomeView: React.FC<HomeViewProps> = ({
       .filter((item): item is NonNullable<typeof item> => item !== null);
   }, [machines, activeTemplates, currentWeekRecords]);
 
-  // Department group counts
-  const groupCounts = useMemo(() => {
-    let bakimOnarim = 0;
-    let uretim = 0;
+  // Dynamic Group Statistics from the Sheet's CostCenter column
+  const groupStats = useMemo(() => {
+    const stats: Record<string, { count: number; totalPlanned: number; completed: number }> = {};
     machineListWithStats.forEach((item) => {
-      if (item.group === '01-350522-Bakim ve Onarim & Üretim') {
-        bakimOnarim++;
-      } else {
-        uretim++;
+      const g = item.group;
+      if (!stats[g]) {
+        stats[g] = { count: 0, totalPlanned: 0, completed: 0 };
       }
+      stats[g].count++;
+      stats[g].totalPlanned += item.totalTasks;
+      stats[g].completed += item.completedTasks;
     });
-    return { bakimOnarim, uretim };
+    return stats;
   }, [machineListWithStats]);
+
+  // All unique available groups extracted dynamically from the CostCenter column
+  const availableGroups = useMemo(() => {
+    const keys = Object.keys(groupStats);
+    return keys.sort((a, b) => {
+      // Keep 01-350522 first if present, otherwise sort naturally
+      if (a.includes('350522')) return -1;
+      if (b.includes('350522')) return 1;
+      return a.localeCompare(b, 'tr-TR');
+    });
+  }, [groupStats]);
 
   // Overall KPIs
   const { totalPlanned, completed, redCount, uygunCount, pendingCount, completionRate } = useMemo(() => {
@@ -260,7 +268,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       const search = searchQuery.toLowerCase().trim();
       const codeStr = (m.machineCode || m.code || item.costCenter || '').toLowerCase();
       const nameStr = (m.machineName || '').toLowerCase();
-      const groupStr = item.group.toLowerCase();
+      const groupStr = (item.group || '').toLowerCase();
 
       const matchesSearch =
         !search ||
@@ -278,54 +286,53 @@ export const HomeView: React.FC<HomeViewProps> = ({
     });
   }, [machineListWithStats, searchQuery, statusFilter, selectedGroup]);
 
-  // Grouped machine rows for clean section headers
+  // Dynamically group machine rows by the exact CostCenter column value
   const groupedMachineRows = useMemo(() => {
-    const groups: {
-      key: '01-350522-Bakim ve Onarim & Üretim' | 'Üretim';
-      title: string;
-      subtitle: string;
-      iconType: 'wrench' | 'factory';
-      items: typeof filteredMachineRows;
-      totalPlanned: number;
-      completed: number;
-    }[] = [
+    const groupMap: Record<
+      string,
       {
-        key: '01-350522-Bakim ve Onarim & Üretim',
-        title: '01-350522 - Bakım ve Onarım & Üretim',
-        subtitle: 'Kompresörler, Jenaratörler, Fabrika Su ve Altyapı Sistemleri',
-        iconType: 'wrench',
-        items: [],
-        totalPlanned: 0,
-        completed: 0,
-      },
-      {
-        key: 'Üretim',
-        title: 'Üretim',
-        subtitle: 'Fin Makineleri, Fırın CAB, Test, Yağ Alma ve İmalat Hatları',
-        iconType: 'factory',
-        items: [],
-        totalPlanned: 0,
-        completed: 0,
-      },
-    ];
+        key: string;
+        title: string;
+        subtitle: string;
+        iconType: 'wrench' | 'factory';
+        items: typeof filteredMachineRows;
+        totalPlanned: number;
+        completed: number;
+      }
+    > = {};
 
     filteredMachineRows.forEach((item) => {
-      const targetKey = item.group === '01-350522-Bakim ve Onarim & Üretim'
-        ? '01-350522-Bakim ve Onarim & Üretim'
-        : 'Üretim';
-      const grp = groups.find((g) => g.key === targetKey);
-      if (grp) {
-        grp.items.push(item);
-        grp.totalPlanned += item.totalTasks;
-        grp.completed += item.completedTasks;
+      const gKey = item.group;
+      if (!groupMap[gKey]) {
+        const isBakim = /bakım|onarim|onarım|350522|kompresör|altyapı/i.test(gKey);
+        groupMap[gKey] = {
+          key: gKey,
+          title: gKey,
+          subtitle: `Maliyet Merkezi: ${gKey}`,
+          iconType: isBakim ? 'wrench' : 'factory',
+          items: [],
+          totalPlanned: 0,
+          completed: 0,
+        };
       }
+      groupMap[gKey].items.push(item);
+      groupMap[gKey].totalPlanned += item.totalTasks;
+      groupMap[gKey].completed += item.completedTasks;
+    });
+
+    const groupsList = Object.values(groupMap);
+    // Sort groups: 01-350522 first, then alphabetical
+    groupsList.sort((a, b) => {
+      if (a.key.includes('350522')) return -1;
+      if (b.key.includes('350522')) return 1;
+      return a.title.localeCompare(b.title, 'tr-TR');
     });
 
     if (selectedGroup !== 'all') {
-      return groups.filter((g) => g.key === selectedGroup && g.items.length > 0);
+      return groupsList.filter((g) => g.key === selectedGroup && g.items.length > 0);
     }
 
-    return groups.filter((g) => g.items.length > 0);
+    return groupsList.filter((g) => g.items.length > 0);
   }, [filteredMachineRows, selectedGroup]);
 
   // Click on a row: navigates directly to operator maintenance screen and starts QR scanning immediately
@@ -500,7 +507,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           </div>
 
-          {/* Departman / Grup Filtre Sekmeleri: 01-350522-Bakim ve Onarim & Üretim */}
+          {/* Departman / Grup Filtre Sekmeleri: E-Tablo CostCenter Sütununa Göre Dinamik */}
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[11px] font-bold text-slate-400 mr-1 hidden sm:inline">Grup:</span>
             <button
@@ -514,48 +521,52 @@ export const HomeView: React.FC<HomeViewProps> = ({
             >
               <Layers className="w-3.5 h-3.5" />
               <span>Tüm Gruplar</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                selectedGroup === 'all' ? 'bg-black/20 text-black' : 'bg-slate-800 text-slate-400'
-              }`}>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  selectedGroup === 'all' ? 'bg-black/20 text-black font-bold' : 'bg-slate-800 text-slate-400'
+                }`}
+              >
                 {machineListWithStats.length}
               </span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setSelectedGroup('01-350522-Bakim ve Onarim & Üretim')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                selectedGroup === '01-350522-Bakim ve Onarim & Üretim'
-                  ? 'bg-yellow-400 text-black border-yellow-400 shadow-md font-black'
-                  : 'bg-[#090f19] text-slate-300 border-slate-700/80 hover:border-slate-500'
-              }`}
-            >
-              <Wrench className="w-3.5 h-3.5" />
-              <span>01-350522 - Bakım ve Onarım & Üretim</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                selectedGroup === '01-350522-Bakim ve Onarim & Üretim' ? 'bg-black/20 text-black' : 'bg-slate-800 text-yellow-400'
-              }`}>
-                {groupCounts.bakimOnarim}
-              </span>
-            </button>
+            {availableGroups.map((groupName) => {
+              const isSelected = selectedGroup === groupName;
+              const isBakim = /bakım|onarim|onarım|350522|kompresör|altyapı/i.test(groupName);
+              const count = groupStats[groupName]?.count || 0;
 
-            <button
-              type="button"
-              onClick={() => setSelectedGroup('Üretim')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                selectedGroup === 'Üretim'
-                  ? 'bg-yellow-400 text-black border-yellow-400 shadow-md font-black'
-                  : 'bg-[#090f19] text-slate-300 border-slate-700/80 hover:border-slate-500'
-              }`}
-            >
-              <Factory className="w-3.5 h-3.5" />
-              <span>Üretim</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                selectedGroup === 'Üretim' ? 'bg-black/20 text-black' : 'bg-slate-800 text-cyan-300'
-              }`}>
-                {groupCounts.uretim}
-              </span>
-            </button>
+              return (
+                <button
+                  key={groupName}
+                  type="button"
+                  onClick={() => setSelectedGroup(isSelected ? 'all' : groupName)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                    isSelected
+                      ? 'bg-yellow-400 text-black border-yellow-400 shadow-md font-black'
+                      : 'bg-[#090f19] text-slate-300 border-slate-700/80 hover:border-slate-500'
+                  }`}
+                  title={groupName}
+                >
+                  {isBakim ? (
+                    <Wrench className={`w-3.5 h-3.5 ${isSelected ? 'text-black' : 'text-yellow-400'}`} />
+                  ) : (
+                    <Factory className={`w-3.5 h-3.5 ${isSelected ? 'text-black' : 'text-cyan-300'}`} />
+                  )}
+                  <span className="max-w-[200px] sm:max-w-[280px] truncate">{groupName}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                      isSelected
+                        ? 'bg-black/20 text-black font-bold'
+                        : isBakim
+                        ? 'bg-slate-800 text-yellow-400'
+                        : 'bg-slate-800 text-cyan-300'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

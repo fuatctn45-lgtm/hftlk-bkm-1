@@ -538,6 +538,76 @@ export const cmmsApi = {
   },
 
   /**
+   * Fast Operator Login via QR Code or Barcode (badge scan or camera)
+   */
+  async loginWithQrOrBarcode(scannedCode: string): Promise<{ success: boolean; user?: UserSession; message?: string }> {
+    const raw = (scannedCode || '').trim();
+    if (!raw) {
+      return { success: false, message: 'Geçersiz veya boş QR / Barkod okundu.' };
+    }
+
+    let searchTarget = raw;
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed) {
+        searchTarget = String(parsed.password || parsed.pin || parsed.code || parsed.user || parsed.id || raw).trim();
+      }
+    } catch {}
+
+    const clean = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ı/g, 'i')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c')
+        .replace(/[^a-z0-9]/g, '');
+
+    const cleanTarget = clean(searchTarget);
+
+    // 1. Direct GViz lookup from "veri" sheet
+    try {
+      const data = await fetchGviz('veri', 4500);
+      if (data?.table?.rows) {
+        for (const row of data.table.rows) {
+          const c = row.c || [];
+          const name = String(c[0]?.v || '').trim();
+          const rowPass = String(c[1]?.f || c[1]?.v || '').trim();
+          const role = String(c[2]?.v || 'operator').toLowerCase().trim();
+          const email = String(c[3]?.v || '').trim();
+
+          const matchPass = rowPass && (rowPass === searchTarget || clean(rowPass) === cleanTarget);
+          const matchName =
+            name &&
+            clean(name).length >= 3 &&
+            (clean(name) === cleanTarget ||
+              cleanTarget.includes(clean(name)) ||
+              clean(name).includes(cleanTarget));
+
+          if (matchPass || matchName) {
+            const u: UserSession = {
+              operator: name || 'Operatör',
+              name: name || 'Operatör',
+              fullName: name || 'Operatör',
+              role,
+              email,
+            };
+            setStoredUser(u);
+            return { success: true, user: u };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('GViz QR auth error:', err);
+    }
+
+    // 2. Fallback to standard login
+    return this.login(searchTarget);
+  },
+
+  /**
    * Fetch live machines from Google Spreadsheet (214 machines) in ~250ms
    */
   async getMachines(): Promise<Machine[]> {

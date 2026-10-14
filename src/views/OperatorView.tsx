@@ -182,14 +182,14 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
   initialMachine,
   initialTemplateId,
 }) => {
-  const isAdmin = String(user.role || '').toLowerCase().includes('admin');
+  const isAdmin = /admin|yonetici|yönetici|super/i.test(String(user.role || ''));
   const currentWeek = getWeekKey();
 
   // Target template if arriving from a specific task click
   const [targetTemplateId, setTargetTemplateId] = useState<string | null>(initialTemplateId || null);
 
   // Navigation step within operator panel
-  // When an operator clicks a machine from home or list, they MUST scan the QR code first!
+  // Admin: Barkodsuz doğrudan bakım adımlarına girer. Operatör: Makine başı QR kod okutmalıdır.
   const [subStep, setSubStep] = useState<'machines' | 'qr' | 'tasks' | 'control'>(() => {
     if (initialMachine) {
       return isAdmin ? 'tasks' : 'qr';
@@ -200,9 +200,9 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
   const [selectedTask, setSelectedTask] = useState<MaintenanceTemplate | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // QR Scanning state: starts immediately if arriving with initialMachine
+  // QR Scanning state: Starts immediately for operators, disabled for admins
   const [qrScanning, setQrScanning] = useState<boolean>(() => {
-    return !!initialMachine;
+    return !!initialMachine && !isAdmin;
   });
   const [qrError, setQrError] = useState<string | null>(null);
   const [qrSuccessMessage, setQrSuccessMessage] = useState<string | null>(null);
@@ -210,17 +210,32 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scanLoopRef = useRef<number | null>(null);
 
-  // Sync state when initialMachine or initialTemplateId changes: always open QR scanner for maintenance
+  // Sync state when initialMachine or initialTemplateId changes:
+  // Admin barkodsuz direkt giriş yapar; Operatör ise makine başı QR okutur
   useEffect(() => {
     if (initialMachine) {
       setSelectedMachine(initialMachine);
       setTargetTemplateId(initialTemplateId || null);
-      setSubStep('qr');
-      setQrScanning(true);
-      setQrError(null);
-      setQrSuccessMessage(null);
+      if (isAdmin) {
+        setSubStep('tasks');
+        setQrScanning(false);
+        setQrError(null);
+        setQrSuccessMessage(null);
+        if (initialTemplateId) {
+          const mTasks = getMachineTasks(initialMachine);
+          const t = mTasks.find((item) => item.templateId === initialTemplateId);
+          if (t) {
+            handleOpenTask(t);
+          }
+        }
+      } else {
+        setSubStep('qr');
+        setQrScanning(true);
+        setQrError(null);
+        setQrSuccessMessage(null);
+      }
     }
-  }, [initialMachine, initialTemplateId]);
+  }, [initialMachine, initialTemplateId, isAdmin]);
 
   // Control / Form state
   const [measuredValue, setMeasuredValue] = useState('');
@@ -1217,7 +1232,7 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
                 }}
                 className="w-full py-2.5 px-4 bg-yellow-400/15 hover:bg-yellow-400/25 text-yellow-400 font-black rounded-xl text-xs border border-yellow-500/40 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
               >
-                <span>⚙️ Admin Yetkisi: QR Doğrulamayı Atla</span>
+                <span>⚙️ Admin Yetkisi: Barkodsuz Doğrudan Giriş Yap</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
