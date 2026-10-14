@@ -10,7 +10,6 @@ import {
 } from '../types/cmms';
 import { getWeekKey, normalizeWeekKey, cmmsApi } from '../services/cmmsApi';
 import { uploadQueueService, QueuedRecord } from '../services/uploadQueue';
-import { analyzeMaintenancePhoto } from '../services/geminiService';
 import { extractDriveFileId } from './RedListView';
 import {
   Search,
@@ -22,7 +21,6 @@ import {
   Maximize2,
   X,
   Upload,
-  Sparkles,
   ShieldAlert,
   Loader2,
   Check,
@@ -111,28 +109,6 @@ function compressImageFile(file: File): Promise<string> {
   });
 }
 
-// Play audio beep sound & trigger haptic feedback on successful scan
-function playScanSuccessSound() {
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (AudioContextClass) {
-      const ctx = new AudioContextClass();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.25, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.15);
-    }
-    if ('vibrate' in navigator) {
-      navigator.vibrate([100]);
-    }
-  } catch {}
-}
 
 // Normalize text for robust QR matching across Turkish characters, symbols, and cases
 export function normalizeQrText(text: string): string {
@@ -267,10 +243,6 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
   const [refImageModalOpen, setRefImageModalOpen] = useState(false);
   const [proofImageModalOpen, setProofImageModalOpen] = useState(false);
 
-  // AI Image Analysis state
-  const [aiAnalyzing, setAiAnalyzing] = useState(false);
-  const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
-  const [aiAnalysisVerdict, setAiAnalysisVerdict] = useState<'UYGUN' | 'RED' | null>(null);
 
   // Real-time background upload queue
   const [uploadQueue, setUploadQueue] = useState<QueuedRecord[]>(() => uploadQueueService.getQueue());
@@ -570,7 +542,6 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
     if (!trimmed) return;
 
     if (isQrMatchMachine(trimmed, selectedMachine)) {
-      playScanSuccessSound();
       setQrScanning(false);
       setQrSuccessMessage(`QR Doğrulandı: ${selectedMachine.machineName} ✔`);
       setTimeout(() => {
@@ -731,8 +702,6 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
     }
     setProofImageFile(null);
     setSaveMessage(null);
-    setAiAnalysisResult(null);
-    setAiAnalysisVerdict(null);
     setSubStep('control');
   };
 
@@ -744,46 +713,13 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
       try {
         const compressedBase64 = await compressImageFile(file);
         setProofImage(compressedBase64);
-        setAiAnalysisResult(null);
       } catch {
         const reader = new FileReader();
         reader.onload = (event) => {
           setProofImage(event.target?.result as string);
-          setAiAnalysisResult(null);
         };
         reader.readAsDataURL(file);
       }
-    }
-  };
-
-  // AI Image Inspection (FEATURE 3: gemini-3.1-pro-preview)
-  const handleRunAiInspection = async () => {
-    if (!proofImage) return;
-
-    setAiAnalyzing(true);
-    setAiAnalysisResult(null);
-
-    try {
-      const res = await analyzeMaintenancePhoto(proofImage, {
-        taskName: selectedTask?.task,
-        machineName: selectedMachine?.machineName,
-      });
-
-      if (res.success && res.analysis) {
-        setAiAnalysisResult(res.analysis);
-        setAiAnalysisVerdict(res.verdict || null);
-
-        if (res.verdict === 'RED' && !description) {
-          setDescription('AI Tarafından Tespit Edilen Kusur: Fotoğrafta aşınma ve sızıntı emareleri saptandı.');
-          setResult('RED');
-        } else if (res.verdict === 'UYGUN' && !result) {
-          setResult('UYGUN');
-        }
-      }
-    } catch (err: any) {
-      alert(err.message || 'Görüntü analizi gerçekleştirilemedi.');
-    } finally {
-      setAiAnalyzing(false);
     }
   };
 
@@ -858,7 +794,6 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
         } catch {}
       }
 
-      playScanSuccessSound();
       setSaveMessage({
         type: 'success',
         text: `Kayıt sıraya alındı ve arka planda aktarılıyor! (${result})`,
@@ -1382,13 +1317,21 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
   // ==========================================
   if (subStep === 'tasks') {
     const progressPercent = machineTasks.length > 0 ? Math.round((completedCount / machineTasks.length) * 100) : 0;
+    const isAllDone = machineTasks.length > 0 && completedCount >= machineTasks.length;
+    const hasRed = redTasks.length > 0;
 
     return (
       <div className="max-w-4xl mx-auto px-3 sm:px-6 py-3 sm:py-5 space-y-3.5">
         {renderBreadcrumbBar()}
 
         {/* Machine Header Card */}
-        <div className="bg-[#1b263b] p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-md space-y-2">
+        <div className={`p-4 sm:p-5 rounded-2xl border shadow-md space-y-2 transition-all ${
+          hasRed
+            ? 'bg-rose-950/40 border-rose-500/80 shadow-rose-950/30 ring-1 ring-rose-500/30'
+            : isAllDone
+            ? 'bg-emerald-950/40 border-emerald-500/80 shadow-emerald-950/30 ring-1 ring-emerald-500/30'
+            : 'bg-[#1b263b] border-slate-800'
+        }`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <span className="text-[11px] font-bold text-yellow-400 uppercase tracking-wider block">
@@ -1400,7 +1343,11 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
             </div>
 
             <div className="text-right">
-              <div className="text-sm sm:text-base font-black text-yellow-400">%{progressPercent}</div>
+              <div className={`text-sm sm:text-base font-black ${
+                hasRed ? 'text-rose-400' : isAllDone ? 'text-emerald-400' : 'text-yellow-400'
+              }`}>
+                %{progressPercent}
+              </div>
               <div className="text-xs text-slate-300 font-semibold">
                 {completedCount} / {machineTasks.length} Kontrol
               </div>
@@ -1410,7 +1357,9 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
           {/* Progress bar */}
           <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
             <div
-              className="h-full rounded-full bg-yellow-400 transition-all duration-300"
+              className={`h-full rounded-full transition-all duration-300 ${
+                hasRed ? 'bg-rose-500' : isAllDone ? 'bg-emerald-400' : 'bg-yellow-400'
+              }`}
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -1693,16 +1642,18 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
   const saveDisabled = saveLoading || (isPhotoRequired && !proofImage);
 
   return (
-    <div className="max-w-2xl mx-auto px-3 sm:px-6 py-3 sm:py-5 space-y-3.5">
+    <div className={`max-w-2xl mx-auto px-3 sm:px-6 py-3 sm:py-5 space-y-3.5 rounded-3xl transition-colors duration-300 ${
+      isOk ? 'bg-emerald-950/20' : isRed ? 'bg-rose-950/20' : ''
+    }`}>
       {renderBreadcrumbBar()}
 
       {/* Control Header Card */}
       <div
         className={`p-4 sm:p-5 rounded-2xl border shadow-md space-y-3 transition-all duration-200 ${
           isRed
-            ? 'bg-rose-950/30 border-rose-600/40'
+            ? 'bg-rose-950/50 border-rose-600/70 shadow-rose-950/40 ring-1 ring-rose-500/30'
             : isOk
-            ? 'bg-emerald-950/30 border-emerald-500/40'
+            ? 'bg-emerald-950/50 border-emerald-500/70 shadow-emerald-950/40 ring-1 ring-emerald-500/30'
             : 'bg-[#1b263b] border-slate-800'
         }`}
       >
@@ -1751,11 +1702,27 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
           </div>
         ) : null}
 
-        {/* Task Specification Info (Arıza / Birim Grubu Renginde RED Stili) */}
-        <div className={`p-4 rounded-xl border transition-all duration-200 space-y-2.5 ${deptStyle.containerClass}`}>
+        {/* Task Specification Info (OK/UYGUN durumunda yeşil, RED durumunda kırmızı arka plan) */}
+        <div
+          className={`p-4 rounded-xl border transition-all duration-200 space-y-2.5 ${
+            isOk
+              ? 'bg-emerald-950/60 border-emerald-500/70 shadow-md shadow-emerald-950/40 ring-1 ring-emerald-500/30'
+              : isRed
+              ? 'bg-rose-950/60 border-rose-500/70 shadow-md shadow-rose-950/40 ring-1 ring-rose-500/30'
+              : deptStyle.containerClass
+          }`}
+        >
           <div className="flex items-center justify-between">
-            <div className={`text-[10px] sm:text-[11px] uppercase font-black tracking-wider flex items-center gap-1.5 ${deptStyle.titleColor}`}>
-              <span className={`w-2 h-2 rounded-full ${deptStyle.dotColor} animate-pulse`} />
+            <div
+              className={`text-[10px] sm:text-[11px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
+                isOk ? 'text-emerald-300' : isRed ? 'text-rose-300' : deptStyle.titleColor
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isOk ? 'bg-emerald-400' : isRed ? 'bg-rose-500' : deptStyle.dotColor
+                } animate-pulse`}
+              />
               <span>YAPILACAK KONTROL</span>
             </div>
             {isPhotoRequired && (
@@ -1766,13 +1733,29 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
             )}
           </div>
 
-          <div className="text-sm sm:text-base font-black leading-snug break-words text-yellow-400 drop-shadow-xs">
+          <div
+            className={`text-sm sm:text-base font-black leading-snug break-words drop-shadow-xs ${
+              isOk ? 'text-emerald-200' : isRed ? 'text-rose-200' : 'text-yellow-400'
+            }`}
+          >
             {selectedTask?.task}
           </div>
 
           <div className="flex flex-wrap gap-1.5 text-xs pt-1.5 border-t border-slate-700/60">
-            <span className={`font-black px-2.5 py-0.5 rounded-md border flex items-center gap-1.5 ${deptStyle.badgeClass}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${deptStyle.dotColor}`} />
+            <span
+              className={`font-black px-2.5 py-0.5 rounded-md border flex items-center gap-1.5 ${
+                isOk
+                  ? 'bg-emerald-900/40 text-emerald-200 border-emerald-600/50'
+                  : isRed
+                  ? 'bg-rose-900/40 text-rose-200 border-rose-600/50'
+                  : deptStyle.badgeClass
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  isOk ? 'bg-emerald-400' : isRed ? 'bg-rose-400' : deptStyle.dotColor
+                }`}
+              />
               <span>Birim: {dept?.ad || selectedTask?.system || 'Genel'}</span>
             </span>
             <span className="font-bold bg-[#192437] text-slate-300 px-2.5 py-0.5 rounded-md border border-slate-700">
@@ -1788,7 +1771,13 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
           {selectedTask?.targetValue && (
             <div className="pt-2 text-xs sm:text-sm font-medium text-slate-200 border-t border-slate-700/40 flex items-center gap-1.5">
               <span className="text-slate-400">Hedef Değer:</span>{' '}
-              <b className={`font-black ${deptStyle.targetColor}`}>{selectedTask.targetValue}</b>
+              <b
+                className={`font-black ${
+                  isOk ? 'text-emerald-300' : isRed ? 'text-rose-300' : deptStyle.targetColor
+                }`}
+              >
+                {selectedTask.targetValue}
+              </b>
             </div>
           )}
         </div>
@@ -1798,9 +1787,9 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
       <div
         className={`p-4 sm:p-5 rounded-2xl border shadow-md space-y-4 transition-all duration-200 ${
           isRed
-            ? 'bg-rose-950/45 border-rose-600/60 shadow-rose-950/40 ring-1 ring-rose-500/30'
+            ? 'bg-rose-950/50 border-rose-600/80 shadow-rose-950/50 ring-2 ring-rose-500/40'
             : isOk
-            ? 'bg-emerald-950/45 border-emerald-500/60 shadow-emerald-950/40 ring-1 ring-emerald-500/30'
+            ? 'bg-emerald-950/50 border-emerald-500/80 shadow-emerald-950/50 ring-2 ring-emerald-500/40'
             : 'bg-[#1b263b] border-slate-800'
         }`}
       >
@@ -1998,56 +1987,6 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
               </div>
             )}
           </div>
-
-          {/* FEATURE 3: AI Visual Defect Inspection Button */}
-          {proofImage && (
-            <div className="mt-3.5 pt-3 border-t border-slate-800">
-              <button
-                type="button"
-                onClick={handleRunAiInspection}
-                disabled={aiAnalyzing}
-                className="w-full py-2.5 px-4 bg-yellow-400 hover:bg-yellow-300 text-black font-black rounded-xl text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-              >
-                {aiAnalyzing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-black" />
-                    <span>Gemini 3.1 Pro Fotoğrafı İnceliyor...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 text-black" />
-                    <span>AI Görsel Kusur & Arıza Tespiti Yap (Gemini 3.1 Pro)</span>
-                  </>
-                )}
-              </button>
-
-              {/* Inspection Results Box */}
-              {aiAnalysisResult && (
-                <div className="mt-3 p-3 bg-[#141d2d] border border-yellow-500/40 rounded-xl text-xs text-slate-100 space-y-2">
-                  <div className="flex items-center justify-between font-black text-yellow-400 border-b border-yellow-500/20 pb-1.5">
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-yellow-400" />
-                      <span>Gemini Endüstriyel Analiz Raporu</span>
-                    </span>
-                    {aiAnalysisVerdict && (
-                      <span
-                        className={`px-2 py-0.5 rounded-full font-black text-[10px] ${
-                          aiAnalysisVerdict === 'RED'
-                            ? 'bg-rose-600 text-white'
-                            : 'bg-emerald-500 text-black'
-                        }`}
-                      >
-                        ÖNERİ: {aiAnalysisVerdict}
-                      </span>
-                    )}
-                  </div>
-                  <div className="whitespace-pre-line leading-relaxed font-medium text-slate-200">
-                    {aiAnalysisResult}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Feedback Message */}

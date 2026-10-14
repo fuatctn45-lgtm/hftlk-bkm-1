@@ -3,7 +3,6 @@ import { MaintenanceTemplate, Machine, DEPARTMENTS, DepartmentConfig } from '../
 import { cmmsApi } from '../services/cmmsApi';
 import { extractDriveFileId } from './RedListView';
 import { CODE_GS_SOURCE } from '../constants/codeGsSource';
-import { analyzeMaintenancePhoto, ImageAnalysisResponse } from '../services/geminiService';
 import {
   Settings,
   Plus,
@@ -19,14 +18,12 @@ import {
   Wrench,
   Shield,
   Layers,
-  Sparkles,
   AlertTriangle,
   Image as ImageIcon,
   Copy,
   FileCode,
   Camera,
   Eye,
-  Bot,
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
@@ -68,8 +65,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [modalPendingImage, setModalPendingImage] = useState<string | null>(null);
   const [modalPendingName, setModalPendingName] = useState<string>('');
   const [modalActionType, setModalActionType] = useState<'keep' | 'deleted' | 'new'>('keep');
-  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
-  const [imageAnalysisResult, setImageAnalysisResult] = useState<ImageAnalysisResponse | null>(null);
   const fileUploadInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -442,7 +437,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
     setModalPendingImage(currentImg || null);
     setModalPendingName(refImageName || '');
     setModalActionType(currentImg ? 'keep' : 'deleted');
-    setImageAnalysisResult(null);
     setImageModalOpen(true);
   };
 
@@ -451,7 +445,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
     setModalPendingImage(null);
     setModalPendingName('');
     setModalActionType('deleted');
-    setImageAnalysisResult(null);
   };
 
   // Modal İçinde: Yeni resim seçildiğinde veya kamera ile çekildiğinde (Düzenleme ekranından çıkmaz!)
@@ -462,7 +455,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
       setModalPendingImage(base64);
       setModalPendingName(name);
       setModalActionType('new');
-      setImageAnalysisResult(null);
       e.target.value = '';
     }
   };
@@ -508,51 +500,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
       setIsNewImageSelected(true);
     }
     setImageModalOpen(false);
-  };
-
-  // AI ile Resmi Analiz Et (Gemini 3.1 Pro / Vision)
-  const handleAnalyzeImage = async () => {
-    const imgToAnalyze = modalPendingImage || refImageBase64 || existingImageUrl;
-    if (!imgToAnalyze) {
-      setStatusMessage({
-        type: 'error',
-        text: 'Analiz edilecek bir görsel bulunamadı. Lütfen önce bir görsel seçin veya yükleyin.',
-      });
-      return;
-    }
-    setIsAnalyzingImage(true);
-    setImageAnalysisResult(null);
-    try {
-      let base64 = imgToAnalyze;
-      if (!imgToAnalyze.startsWith('data:')) {
-        const fetchUrl = extractDriveFileId(imgToAnalyze)
-          ? `/api/drive-image/${extractDriveFileId(imgToAnalyze)}`
-          : imgToAnalyze;
-        const res = await fetch(fetchUrl);
-        const blob = await res.blob();
-        base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
-      }
-      const cleanData = base64.replace(/^data:image\/[a-zA-Z]+;base64,/, '');
-      const mime = base64.match(/data:(.*?);base64/)?.[1] || 'image/jpeg';
-      const result = await analyzeMaintenancePhoto(cleanData, {
-        mimeType: mime,
-        taskName: task || 'Teknik Şema Kontrolü',
-        machineName: selectedMachine?.machineName || 'Endüstriyel Ekipman',
-        prompt: 'Bu endüstriyel teknik şema veya bakım görselini analiz et. Parça ve montaj yapısını, şemanın doğruluğunu, bağlantı noktalarını ve kritik bakım uyarılarını özetle.',
-      });
-      setImageAnalysisResult(result);
-    } catch (err: any) {
-      setImageAnalysisResult({
-        success: false,
-        message: err?.message || 'Görsel analizi yapılamadı.',
-      });
-    } finally {
-      setIsAnalyzingImage(false);
-    }
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1272,7 +1219,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     )}
                   </h4>
                   <p className="text-[11px] text-slate-400 font-medium">
-                    Fotoğraf çekebilir, dosya seçebilir, silebilir veya yapay zeka ile analiz edebilirsiniz
+                    Fotoğraf çekebilir, dosya seçebilir veya silebilirsiniz
                   </p>
                 </div>
               </div>
@@ -1329,61 +1276,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 )}
               </div>
 
-              {/* AI Gemini Görsel Analiz Bölümü (resmi analiz et) */}
-              {(modalPendingImage || refImageBase64 || existingImageUrl) && (
-                <div className="bg-[#1b263b] rounded-2xl p-4 border border-cyan-500/30 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-cyan-300 font-bold text-xs uppercase tracking-wider">
-                      <Bot className="w-4 h-4 text-cyan-400" />
-                      <span>Gemini Endüstriyel Şema & Görüntü Analizi</span>
-                    </div>
 
-                    <button
-                      type="button"
-                      onClick={handleAnalyzeImage}
-                      disabled={isAnalyzingImage || (!modalPendingImage && !refImageBase64 && !existingImageUrl)}
-                      className="py-1.5 px-3 rounded-lg text-xs font-black bg-cyan-400 hover:bg-cyan-300 text-black cursor-pointer active:scale-95 transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isAnalyzingImage ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Analiz Ediliyor...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>Resmi Analiz Et</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {imageAnalysisResult && (
-                    <div className="mt-3 p-3.5 rounded-xl bg-[#0f172a] border border-cyan-500/40 text-xs space-y-2 animate-in fade-in duration-200">
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                        <span className="font-bold text-slate-300 flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                          <span>Mühendislik Değerlendirmesi</span>
-                        </span>
-                        {imageAnalysisResult.verdict && (
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-black border ${
-                              imageAnalysisResult.verdict === 'UYGUN'
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                                : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                            }`}
-                          >
-                            ÖNERİLEN: {imageAnalysisResult.verdict}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-slate-300 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto pr-1">
-                        {imageAnalysisResult.analysis || imageAnalysisResult.message}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Gizli Dosya & Kamera Inputları */}
               <input
@@ -1654,20 +1547,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
                       <span>Görseli Sil</span>
                     </button>
 
-                    {/* AI Görsel Analiz (resmi analiz et) */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleOpenImageModal();
-                        handleAnalyzeImage();
-                      }}
-                      disabled={!refImageBase64 && !existingImageUrl}
-                      className="py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border bg-cyan-500/20 text-cyan-300 border-cyan-500/40 hover:bg-cyan-500/30 cursor-pointer active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Bot className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Resmi Analiz Et</span>
-                    </button>
-
                     {/* Kameradan Hızlı Çek */}
                     <button
                       type="button"
@@ -1927,7 +1806,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
               {/* Açıklama Kutusu */}
               <div className="p-4 rounded-xl bg-yellow-950/30 border border-yellow-500/30 text-xs text-yellow-300 space-y-2">
                 <div className="font-black text-sm flex items-center gap-2 text-yellow-400">
-                  <Sparkles className="w-4 h-4" />
+                  <Layers className="w-4 h-4" />
                   <span>Google E-Tablo Görsel Sütun Eşleşmesi:</span>
                 </div>
                 <ul className="list-disc list-inside space-y-1 text-slate-300 font-medium text-xs">
