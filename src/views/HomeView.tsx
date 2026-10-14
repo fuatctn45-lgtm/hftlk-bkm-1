@@ -507,66 +507,51 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           </div>
 
-          {/* Departman / Grup Filtre Sekmeleri: E-Tablo CostCenter Sütununa Göre Dinamik */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-bold text-slate-400 mr-1 hidden sm:inline">Grup:</span>
-            <button
-              type="button"
-              onClick={() => setSelectedGroup('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                selectedGroup === 'all'
-                  ? 'bg-yellow-400 text-black border-yellow-400 shadow-md font-black'
-                  : 'bg-[#090f19] text-slate-300 border-slate-700/80 hover:border-slate-500'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Tüm Gruplar</span>
-              <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                  selectedGroup === 'all' ? 'bg-black/20 text-black font-bold' : 'bg-slate-800 text-slate-400'
-                }`}
-              >
-                {machineListWithStats.length}
-              </span>
-            </button>
-
-            {availableGroups.map((groupName) => {
-              const isSelected = selectedGroup === groupName;
-              const isBakim = /bakım|onarim|onarım|350522|kompresör|altyapı/i.test(groupName);
-              const count = groupStats[groupName]?.count || 0;
-
-              return (
-                <button
-                  key={groupName}
-                  type="button"
-                  onClick={() => setSelectedGroup(isSelected ? 'all' : groupName)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                    isSelected
-                      ? 'bg-yellow-400 text-black border-yellow-400 shadow-md font-black'
-                      : 'bg-[#090f19] text-slate-300 border-slate-700/80 hover:border-slate-500'
-                  }`}
-                  title={groupName}
+          {/* Departman / Grup Filtresi (Açılır Liste - Yer Tasarruflu ve Pratik) */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="relative flex-1">
+              <label htmlFor="group-select-dropdown" className="sr-only">
+                Grup Seçimi
+              </label>
+              <div className="relative flex items-center bg-[#090f19] border border-slate-700/80 hover:border-yellow-400/70 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400/50 rounded-xl px-3 py-2 transition-all shadow-xs">
+                <Layers className="w-4 h-4 text-yellow-400 shrink-0 mr-2" />
+                <span className="text-xs font-bold text-slate-400 mr-2 shrink-0">
+                  Grup:
+                </span>
+                <select
+                  id="group-select-dropdown"
+                  value={selectedGroup}
+                  onChange={(e) => setSelectedGroup(e.target.value)}
+                  className="w-full bg-transparent text-white font-bold text-xs sm:text-sm focus:outline-none cursor-pointer pr-7 appearance-none truncate [&>option]:bg-[#121a29] [&>option]:text-white [&>option]:py-2"
                 >
-                  {isBakim ? (
-                    <Wrench className={`w-3.5 h-3.5 ${isSelected ? 'text-black' : 'text-yellow-400'}`} />
-                  ) : (
-                    <Factory className={`w-3.5 h-3.5 ${isSelected ? 'text-black' : 'text-cyan-300'}`} />
-                  )}
-                  <span className="max-w-[200px] sm:max-w-[280px] truncate">{groupName}</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                      isSelected
-                        ? 'bg-black/20 text-black font-bold'
-                        : isBakim
-                        ? 'bg-slate-800 text-yellow-400'
-                        : 'bg-slate-800 text-cyan-300'
-                    }`}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
+                  <option value="all">
+                    Tüm Gruplar ({machineListWithStats.length} Makine)
+                  </option>
+                  {availableGroups.map((groupName) => {
+                    const count = groupStats[groupName]?.count || 0;
+                    return (
+                      <option key={groupName} value={groupName}>
+                        {groupName} ({count} Makine)
+                      </option>
+                    );
+                  })}
+                </select>
+                <ChevronDown className="w-4 h-4 text-yellow-400 shrink-0 pointer-events-none absolute right-3" />
+              </div>
+            </div>
+
+            {/* Seçili Grup Temizleme Butonu */}
+            {selectedGroup !== 'all' && (
+              <button
+                type="button"
+                onClick={() => setSelectedGroup('all')}
+                className="px-3 py-2 bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/40 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0 active:scale-95"
+                title="Tüm Gruplara Dön"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Tüm Gruplara Dön</span>
+              </button>
+            )}
           </div>
         </div>
 
