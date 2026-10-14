@@ -19,6 +19,7 @@ import { ReportsView } from './views/ReportsView';
 import { AdminView } from './views/AdminView';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { Loader2, LogOut, AlertCircle, X } from 'lucide-react';
+import { getStoredTheme, applyTheme, ThemeId } from './utils/theme';
 
 function filterMachinesWithTasks(rawMachines: Machine[], rawTemplates: MaintenanceTemplate[]): Machine[] {
   const activeTemplates = rawTemplates.filter((tmpl) => tmpl.active);
@@ -100,6 +101,19 @@ export default function App() {
 
   const [operatorInitialMachine, setOperatorInitialMachine] = useState<Machine | null>(null);
   const [operatorInitialTemplateId, setOperatorInitialTemplateId] = useState<string | null>(null);
+  const [themeId, setThemeId] = useState<ThemeId>(() => getStoredTheme());
+
+  // Apply stored theme on mount and listen to changes
+  useEffect(() => {
+    applyTheme(getStoredTheme());
+    const onThemeChanged = (e: any) => {
+      if (e.detail?.themeId) {
+        setThemeId(e.detail.themeId);
+      }
+    };
+    window.addEventListener('cmms_theme_changed', onThemeChanged);
+    return () => window.removeEventListener('cmms_theme_changed', onThemeChanged);
+  }, []);
 
   // Clear legacy mock data once to ensure only real Google Sheet data is present
   useEffect(() => {
@@ -191,7 +205,7 @@ export default function App() {
   // Not logged in: Show Login Screen IMMEDIATELY (0ms start, never blocked on mobile/Android)
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#131d2e]">
+      <div className={`min-h-screen ${themeId === 'light-day' ? 'bg-[#f1f5f9]' : 'bg-[#131d2e]'}`}>
         <LoginView onLoginSuccess={handleLoginSuccess} />
       </div>
     );
@@ -201,7 +215,7 @@ export default function App() {
 
   // Logged in: Render Full Application with Responsive Header
   return (
-    <div className="min-h-screen bg-[#131d2e] text-slate-100 flex flex-col font-sans">
+    <div className={`min-h-screen ${themeId === 'light-day' ? 'bg-[#f1f5f9] text-[#0f172a]' : 'bg-[#131d2e] text-slate-100'} flex flex-col font-sans transition-colors duration-200`}>
       <Header
         currentScreen={currentScreen}
         onNavigate={(screen) => {

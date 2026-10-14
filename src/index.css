@@ -6,6 +6,54 @@
   --header-height: 58px;
   --color-industrial-yellow: #facc15;
   --color-industrial-black: #131d2e;
+
+  /* Default AKG Classic Theme Variables */
+  --app-bg: #131d2e;
+  --app-header-bg: #152033;
+  --app-card-bg: #1b263b;
+  --app-card-inner: #121a29;
+  --app-border: rgba(51, 65, 85, 0.7);
+  --app-text: #f8fafc;
+}
+
+/* OLED Gece Karası */
+[data-theme="oled-black"] {
+  --app-bg: #030508;
+  --app-header-bg: #070b12;
+  --app-card-bg: #0b1018;
+  --app-card-inner: #05070c;
+  --app-border: rgba(250, 204, 21, 0.35);
+  --app-text: #ffffff;
+}
+
+/* Grafit & Çelik */
+[data-theme="graphite-steel"] {
+  --app-bg: #0a0f1d;
+  --app-header-bg: #131c30;
+  --app-card-bg: #1e293b;
+  --app-card-inner: #0f172a;
+  --app-border: rgba(71, 85, 105, 0.8);
+  --app-text: #f1f5f9;
+}
+
+/* Aydınlık Fabrika (Gündüz) */
+[data-theme="light-day"] {
+  --app-bg: #f1f5f9;
+  --app-header-bg: #ffffff;
+  --app-card-bg: #ffffff;
+  --app-card-inner: #f8fafc;
+  --app-border: #cbd5e1;
+  --app-text: #0f172a;
+}
+
+/* Endüstriyel Zümrüt */
+[data-theme="emerald-dark"] {
+  --app-bg: #04120e;
+  --app-header-bg: #082119;
+  --app-card-bg: #0e3025;
+  --app-card-inner: #061712;
+  --app-border: rgba(52, 211, 153, 0.35);
+  --app-text: #ecfdf5;
 }
 
 html, body, #root {
@@ -17,8 +65,9 @@ html, body, #root {
   padding: 0;
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
-  background-color: #131d2e;
-  color: #f8fafc;
+  background-color: var(--app-bg);
+  color: var(--app-text);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 *, *::before, *::after {
@@ -56,7 +105,7 @@ code, pre, .font-mono {
   }
 }
 
-/* Custom crisp industrial yellow/black scrollbars */
+/* Custom crisp industrial scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -91,6 +140,81 @@ code, pre, .font-mono {
     #eab308 12px,
     #eab308 24px
   );
+}
+
+/* ============================================================== */
+/* CANLI TEMA UYARLAMALARI (OLED, Grafit, Aydınlık, Zümrüt)       */
+/* ============================================================== */
+
+/* 1. OLED Gece Karası Canlı Stil Geçişleri */
+[data-theme="oled-black"] .bg-\[\#131d2e\],
+[data-theme="oled-black"] .bg-\[\#152033\],
+[data-theme="oled-black"] .bg-\[\#121a29\] {
+  background-color: #030508 !important;
+}
+[data-theme="oled-black"] .bg-\[\#1b263b\] {
+  background-color: #080c14 !important;
+  border-color: rgba(250, 204, 21, 0.25) !important;
+}
+
+/* 2. Grafit & Çelik Canlı Stil Geçişleri */
+[data-theme="graphite-steel"] .bg-\[\#131d2e\],
+[data-theme="graphite-steel"] .bg-\[\#121a29\] {
+  background-color: #0a0f1d !important;
+}
+[data-theme="graphite-steel"] .bg-\[\#152033\] {
+  background-color: #131c30 !important;
+}
+[data-theme="graphite-steel"] .bg-\[\#1b263b\] {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+/* 3. Endüstriyel Zümrüt Canlı Stil Geçişleri */
+[data-theme="emerald-dark"] .bg-\[\#131d2e\],
+[data-theme="emerald-dark"] .bg-\[\#121a29\] {
+  background-color: #04120e !important;
+}
+[data-theme="emerald-dark"] .bg-\[\#152033\] {
+  background-color: #082119 !important;
+}
+[data-theme="emerald-dark"] .bg-\[\#1b263b\] {
+  background-color: #0d2820 !important;
+  border-color: rgba(52, 211, 153, 0.3) !important;
+}
+
+/* 4. Aydınlık Fabrika (Gündüz Modu) Canlı Stil Geçişleri */
+[data-theme="light-day"] .bg-\[\#131d2e\],
+[data-theme="light-day"] .bg-\[\#121a29\] {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+[data-theme="light-day"] .bg-\[\#152033\] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+[data-theme="light-day"] .bg-\[\#1b263b\],
+[data-theme="light-day"] .bg-\[\#1f2d42\],
+[data-theme="light-day"] .bg-\[\#182335\] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+[data-theme="light-day"] .text-slate-100,
+[data-theme="light-day"] .text-slate-200,
+[data-theme="light-day"] .text-white {
+  color: #0f172a !important;
+}
+[data-theme="light-day"] .text-slate-300,
+[data-theme="light-day"] .text-slate-400 {
+  color: #475569 !important;
+}
+[data-theme="light-day"] .border-slate-700\/80,
+[data-theme="light-day"] .border-slate-700\/70,
+[data-theme="light-day"] .border-slate-700\/60,
+[data-theme="light-day"] .border-slate-800 {
+  border-color: #cbd5e1 !important;
 }
 
 @media print {
