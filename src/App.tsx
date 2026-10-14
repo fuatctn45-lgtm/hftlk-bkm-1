@@ -52,6 +52,7 @@ function filterMachinesWithTasks(rawMachines: Machine[], rawTemplates: Maintenan
         machineName: tmpl.machineName,
         machineCode: tmpl.machineId || '',
         code: tmpl.machineId || '',
+        costCenter: tmpl.costCenter || '',
       });
     }
   }

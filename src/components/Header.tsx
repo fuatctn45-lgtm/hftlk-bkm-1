@@ -240,136 +240,146 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Dropdown Panel Sheet */}
             {dropdownOpen && (
-              <div className="fixed sm:absolute right-2 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[calc(100vw-16px)] sm:w-88 max-w-sm bg-[#1b263b] rounded-2xl shadow-2xl border border-yellow-500/40 overflow-hidden text-slate-100 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                {/* User info banner */}
-                <div className="bg-[#141d2c] text-white p-4 border-b border-yellow-500/20">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-yellow-400 text-black flex items-center justify-center font-black text-sm shrink-0 shadow-md">
-                        {operatorName.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-black text-sm truncate text-yellow-400 leading-tight">
-                          {operatorName}
+              <>
+                {/* Mobil karartma perdesi: Telefonda arka planı karartıp açılır menüyü öne çıkarır */}
+                <div
+                  className="fixed inset-0 bg-black/75 backdrop-blur-xs z-40 sm:hidden"
+                  onClick={() => setDropdownOpen(false)}
+                />
+
+                <div className="fixed sm:absolute right-2 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[calc(100vw-16px)] sm:w-88 max-w-sm bg-[#0a0f18] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.95)] border-2 border-yellow-400/80 ring-1 ring-yellow-400/40 overflow-hidden text-slate-100 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  {/* User info banner - Koyu kontrast başlık */}
+                  <div className="bg-[#05080e] text-white p-4 border-b border-yellow-400/30">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-yellow-400 text-black flex items-center justify-center font-black text-sm shrink-0 shadow-md">
+                          {operatorName.charAt(0).toUpperCase()}
                         </div>
-                        <div className="text-[11px] text-slate-300 flex items-center gap-1.5 mt-0.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block" />
-                          <span>{isAdmin ? 'Yönetici' : 'Saha Operatörü'}</span>
+                        <div className="min-w-0">
+                          <div className="font-black text-sm truncate text-yellow-400 leading-tight">
+                            {operatorName}
+                          </div>
+                          <div className="text-[11px] text-slate-300 flex items-center gap-1.5 mt-0.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block" />
+                            <span>{isAdmin ? 'Yönetici' : 'Saha Operatörü'}</span>
+                          </div>
                         </div>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setDropdownOpen(false)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-700/80 text-[11px]">
+                      <div className="bg-[#101826] rounded-lg px-2.5 py-1.5 border border-slate-700/80">
+                        <span className="text-slate-400 block text-[10px]">Bakımlı Makineler</span>
+                        <span className="font-black text-yellow-400 text-xs">{machinesCount} Adet</span>
+                      </div>
+                      <div className="bg-[#101826] rounded-lg px-2.5 py-1.5 border border-slate-700/80">
+                        <span className="text-slate-400 block text-[10px]">Toplam Kayıt</span>
+                        <span className="font-black text-yellow-400 text-xs">{recordsCount} Kayıt</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nav Links */}
+                  <div className="p-2 space-y-1 max-h-[50vh] overflow-y-auto bg-[#0a0f18]">
+                    {navItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = currentScreen === item.id;
+
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => handleSelectNav(item.id)}
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center justify-between transition-all cursor-pointer ${
+                            isActive
+                              ? 'bg-yellow-400/20 text-yellow-300 font-black border border-yellow-500/50 shadow-xs'
+                              : 'hover:bg-[#141d2d] text-slate-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`p-2 rounded-xl shrink-0 border ${item.color}`}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className={`text-xs sm:text-sm font-extrabold truncate ${isActive ? 'text-yellow-400' : 'text-slate-100'}`}>
+                                {item.label}
+                              </div>
+                              <div className="text-[10px] text-slate-400 truncate">
+                                {item.desc}
+                              </div>
+                            </div>
+                          </div>
+
+                          {item.badge ? (
+                            <span className="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 shadow-xs">
+                              {item.badge}
+                            </span>
+                          ) : (
+                            <ArrowRight className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-yellow-400' : 'text-slate-500'}`} />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Dropdown Footer: Live Google E-Tablo Status + Quick ZIP Export (Admin only) + Logout */}
+                  <div className="p-3 bg-[#05080e] border-t border-yellow-400/30 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold px-1">
+                      <span className="flex items-center gap-1.5">
+                        <FileSpreadsheet className="w-3.5 h-3.5 text-yellow-400" />
+                        <span>Google E-Tablo</span>
+                      </span>
+                      <span className="text-emerald-400 font-bold">Canlı Bağlantı</span>
+                    </div>
+
+                    {/* Hard Refresh Button for Android & Mobile */}
                     <button
                       type="button"
-                      onClick={() => setDropdownOpen(false)}
-                      className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        handleHardRefresh();
+                      }}
+                      className="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 text-yellow-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors border border-yellow-500/30 cursor-pointer"
                     >
-                      <X className="w-4 h-4" />
+                      <RefreshCw className="w-3.5 h-3.5 text-yellow-400" />
+                      <span>Önbelleği Temizle & Yenile (Android)</span>
+                    </button>
+
+                    {/* GitHub Pages ZIP Button - SADECE ADMİN GÖREBİLİR */}
+                    {isAdmin && (
+                      <a
+                        href="/api/export-github-pages-zip"
+                        download="hftlk-bkm-github-pages.zip"
+                        className="w-full py-2 px-3 bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-black rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-md shadow-yellow-500/10"
+                      >
+                        <Download className="w-3.5 h-3.5 text-black" />
+                        <span>GitHub Pages İçin Hazır ZIP</span>
+                      </a>
+                    )}
+
+                    {/* Logout Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        onRequestLogout();
+                      }}
+                      className="w-full py-2 px-3 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors border border-rose-800/40 cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Oturumu Kapat</span>
                     </button>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-700/80 text-[11px]">
-                    <div className="bg-[#192437] rounded-lg px-2.5 py-1.5 border border-slate-700/70">
-                      <span className="text-slate-400 block text-[10px]">Bakımlı Makineler</span>
-                      <span className="font-black text-yellow-400 text-xs">{machinesCount} Adet</span>
-                    </div>
-                    <div className="bg-[#192437] rounded-lg px-2.5 py-1.5 border border-slate-700/70">
-                      <span className="text-slate-400 block text-[10px]">Toplam Kayıt</span>
-                      <span className="font-black text-yellow-400 text-xs">{recordsCount} Kayıt</span>
-                    </div>
-                  </div>
                 </div>
-
-                {/* Nav Links */}
-                <div className="p-2 space-y-1 max-h-[50vh] overflow-y-auto">
-                  {navItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = currentScreen === item.id;
-
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => handleSelectNav(item.id)}
-                        className={`w-full p-2.5 rounded-xl text-left flex items-center justify-between transition-all cursor-pointer ${
-                          isActive
-                            ? 'bg-yellow-400/20 text-yellow-300 font-black border border-yellow-500/50 shadow-xs'
-                            : 'hover:bg-[#223048] text-slate-200'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className={`p-2 rounded-xl shrink-0 border ${item.color}`}>
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className={`text-xs sm:text-sm font-extrabold truncate ${isActive ? 'text-yellow-400' : 'text-slate-100'}`}>
-                              {item.label}
-                            </div>
-                            <div className="text-[10px] text-slate-400 truncate">
-                              {item.desc}
-                            </div>
-                          </div>
-                        </div>
-
-                        {item.badge ? (
-                          <span className="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 shadow-xs">
-                            {item.badge}
-                          </span>
-                        ) : (
-                          <ArrowRight className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-yellow-400' : 'text-slate-500'}`} />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Dropdown Footer: Live Google E-Tablo Status + Quick ZIP Export + Logout */}
-                <div className="p-3 bg-[#131b2a] border-t border-slate-700/80 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold px-1">
-                    <span className="flex items-center gap-1.5">
-                      <FileSpreadsheet className="w-3.5 h-3.5 text-yellow-400" />
-                      <span>Google E-Tablo</span>
-                    </span>
-                    <span className="text-emerald-400 font-bold">Canlı Bağlantı</span>
-                  </div>
-
-                  {/* Hard Refresh Button for Android & Mobile */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      handleHardRefresh();
-                    }}
-                    className="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 text-yellow-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors border border-yellow-500/30 cursor-pointer"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5 text-yellow-400" />
-                    <span>Önbelleği Temizle & Yenile (Android)</span>
-                  </button>
-
-                  {/* GitHub Pages ZIP Button */}
-                  <a
-                    href="/api/export-github-pages-zip"
-                    download="hftlk-bkm-github-pages.zip"
-                    className="w-full py-2 px-3 bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-black rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-md shadow-yellow-500/10"
-                  >
-                    <Download className="w-3.5 h-3.5 text-black" />
-                    <span>GitHub Pages İçin Hazır ZIP</span>
-                  </a>
-
-                  {/* Logout Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      onRequestLogout();
-                    }}
-                    className="w-full py-2 px-3 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors border border-rose-800/40 cursor-pointer"
-                  >
-                    <LogOut className="w-3.5 h-3.5 text-rose-400" />
-                    <span>Oturumu Kapat</span>
-                  </button>
-                </div>
-              </div>
+              </>
             )}
           </div>
         </div>

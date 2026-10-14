@@ -200,12 +200,9 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
   const [selectedTask, setSelectedTask] = useState<MaintenanceTemplate | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // QR Scanning state: starts immediately if arriving with initialMachine for operator
+  // QR Scanning state: starts immediately if arriving with initialMachine
   const [qrScanning, setQrScanning] = useState<boolean>(() => {
-    if (initialMachine && !isAdmin) {
-      return true;
-    }
-    return false;
+    return !!initialMachine;
   });
   const [qrError, setQrError] = useState<string | null>(null);
   const [qrSuccessMessage, setQrSuccessMessage] = useState<string | null>(null);
@@ -213,22 +210,17 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scanLoopRef = useRef<number | null>(null);
 
-  // Sync state when initialMachine or initialTemplateId changes
+  // Sync state when initialMachine or initialTemplateId changes: always open QR scanner for maintenance
   useEffect(() => {
     if (initialMachine) {
       setSelectedMachine(initialMachine);
       setTargetTemplateId(initialTemplateId || null);
-      if (isAdmin) {
-        setSubStep('tasks');
-        setQrScanning(false);
-      } else {
-        setSubStep('qr');
-        setQrScanning(true);
-        setQrError(null);
-        setQrSuccessMessage(null);
-      }
+      setSubStep('qr');
+      setQrScanning(true);
+      setQrError(null);
+      setQrSuccessMessage(null);
     }
-  }, [initialMachine, initialTemplateId, isAdmin]);
+  }, [initialMachine, initialTemplateId]);
 
   // Control / Form state
   const [measuredValue, setMeasuredValue] = useState('');

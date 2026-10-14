@@ -8,10 +8,34 @@ import {
   CheckCircle2,
   Clock,
   TrendingUp,
-  BarChart3,
-  Settings,
-  ArrowRight,
+  Search,
+  X,
+  Check,
+  ChevronRight,
+  QrCode,
+  Factory,
+  Layers,
 } from 'lucide-react';
+
+export type MachineGroup = '01-350522-Bakim ve Onarim & Üretim' | 'Üretim';
+
+export const getMachineGroup = (m: Machine, costCenter?: string): MachineGroup => {
+  const cc = (costCenter || m.costCenter || m.maliyetMerkezi || '').trim();
+  const name = (m.machineName || '').toUpperCase();
+  if (
+    cc.includes('350522') ||
+    cc.toUpperCase().includes('BAKIM VE ONARIM') ||
+    cc.toUpperCase().includes('BAKIM') ||
+    name.includes('KOMPRESÖR') ||
+    name.includes('LUPAMAT') ||
+    name.includes('JENARATÖR') ||
+    name.includes('TEMİZ SU') ||
+    name.includes('DOĞAL GAZ')
+  ) {
+    return '01-350522-Bakim ve Onarim & Üretim';
+  }
+  return 'Üretim';
+};
 
 interface HomeViewProps {
   user: UserSession;
@@ -28,11 +52,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
   templates,
   records,
   onNavigate,
+  onSelectMachine,
 }) => {
   const currentWeek = getWeekKey();
   const operatorName = user.operator || user.name || user.fullName || 'Operatör';
-  const isAdmin = String(user.role || '').toLowerCase().includes('admin');
   const [uploadQueue, setUploadQueue] = useState<QueuedRecord[]>(() => uploadQueueService.getQueue());
+
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed' | 'red'>('all');
+  const [selectedGroup, setSelectedGroup] = useState<'all' | '01-350522-Bakim ve Onarim & Üretim' | 'Üretim'>('all');
 
   useEffect(() => {
     return uploadQueueService.subscribe(setUploadQueue);
@@ -73,52 +102,132 @@ export const HomeView: React.FC<HomeViewProps> = ({
     return templates.filter((t) => t.active);
   }, [templates]);
 
-  const machinesWithTasksCount = useMemo(() => {
-    return machines.filter((m) => {
-      const mid = (m.id || '').trim().toLowerCase();
-      const mName = (m.machineName || '').trim().toLowerCase();
-      return activeTemplates.some((t) => {
-        const tMid = (t.machineId || '').trim().toLowerCase();
-        const tMName = (t.machineName || '').trim().toLowerCase();
-        return (tMid && tMid === mid) || (tMName && tMName === mName);
-      });
-    }).length;
-  }, [machines, activeTemplates]);
+  // Helper to match active tasks to a machine
+  const getTasksForMachine = (m: Machine) => {
+    const mid = (m.id || '').trim().toLowerCase();
+    const mName = (m.machineName || '').trim().toLowerCase();
+    const mCode = (m.code || m.machineCode || '').trim().toLowerCase();
+    const mCost = (m.costCenter || '').trim().toLowerCase();
 
-  // Exact KPI calculation based on active tasks vs inspection statuses
+    return activeTemplates.filter((t) => {
+      const tMid = (t.machineId || '').trim().toLowerCase();
+      const tMName = (t.machineName || '').trim().toLowerCase();
+
+      return (
+        (tMid && (tMid === mid || tMid === mCode || tMid === mCost)) ||
+        (tMName && (tMName === mName || tMName.includes(mName) || mName.includes(tMName))) ||
+        tMid === mid
+      );
+    }).sort((a, b) => (a.orderNo || 1) - (b.orderNo || 1));
+  };
+
+  // Helper to match a task's record for a machine
+  const getTaskRecord = (machine: Machine, task: MaintenanceTemplate) => {
+    const cleanTid = (task.templateId || '').trim().toLowerCase();
+    const cleanMid = (machine.id || '').trim().toLowerCase();
+    const cleanMName = (machine.machineName || '').trim().toLowerCase();
+
+    return currentWeekRecords.find((r) => {
+      const rTid = (r.templateId || '').trim().toLowerCase();
+      if (rTid !== cleanTid) return false;
+      const rMid = (r.machineId || '').trim().toLowerCase();
+      const rMName = (r.machineName || '').trim().toLowerCase();
+      return (
+        rMid === cleanMid ||
+        rMName === cleanMName ||
+        (cleanMid && (rMid.includes(cleanMid) || cleanMid.includes(rMid)))
+      );
+    });
+  };
+
+  // Aggregate stats per machine
+  const machineListWithStats = useMemo(() => {
+    return machines
+      .map((machine) => {
+        const tasks = getTasksForMachine(machine);
+        if (tasks.length === 0) return null;
+
+        const resolvedCostCenter = (machine.costCenter || tasks[0]?.costCenter || '').trim();
+        const group = getMachineGroup(machine, resolvedCostCenter);
+
+        let okCount = 0;
+        let redCount = 0;
+
+        const tasksWithStatus = tasks.map((task) => {
+          const rec = getTaskRecord(machine, task);
+          let status: 'tamamlanan' | 'red' | 'bekleyen' = 'bekleyen';
+          if (rec) {
+            if (String(rec.result || '').toUpperCase().includes('RED')) {
+              status = 'red';
+              redCount++;
+            } else {
+              status = 'tamamlanan';
+              okCount++;
+            }
+          }
+
+          return {
+            task,
+            record: rec || null,
+            status,
+          };
+        });
+
+        const totalTasks = tasks.length;
+        const completedTasks = okCount + redCount;
+        const pendingTasks = Math.max(0, totalTasks - completedTasks);
+        const completionRate = totalTasks > 0 ? Math.min(100, Math.round((completedTasks / totalTasks) * 100)) : 0;
+
+        return {
+          machine: {
+            ...machine,
+            costCenter: resolvedCostCenter || machine.costCenter,
+          },
+          costCenter: resolvedCostCenter,
+          group,
+          totalTasks,
+          completedTasks,
+          pendingTasks,
+          okCount,
+          redCount,
+          completionRate,
+          tasksWithStatus,
+          isCompleted: pendingTasks === 0,
+          hasRed: redCount > 0,
+          isPending: pendingTasks > 0,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+  }, [machines, activeTemplates, currentWeekRecords]);
+
+  // Department group counts
+  const groupCounts = useMemo(() => {
+    let bakimOnarim = 0;
+    let uretim = 0;
+    machineListWithStats.forEach((item) => {
+      if (item.group === '01-350522-Bakim ve Onarim & Üretim') {
+        bakimOnarim++;
+      } else {
+        uretim++;
+      }
+    });
+    return { bakimOnarim, uretim };
+  }, [machineListWithStats]);
+
+  // Overall KPIs
   const { totalPlanned, completed, redCount, uygunCount, pendingCount, completionRate } = useMemo(() => {
-    const planned = activeTemplates.length;
+    let planned = 0;
+    let done = 0;
     let red = 0;
     let ok = 0;
 
-    activeTemplates.forEach((t) => {
-      const cleanTid = (t.templateId || '').trim().toLowerCase();
-      const cleanMid = (t.machineId || '').trim().toLowerCase();
-      const cleanMName = (t.machineName || '').trim().toLowerCase();
-
-      const matchingRecords = currentWeekRecords.filter((r) => {
-        const rTid = (r.templateId || '').trim().toLowerCase();
-        if (rTid !== cleanTid) return false;
-        const rMid = (r.machineId || '').trim().toLowerCase();
-        const rMName = (r.machineName || '').trim().toLowerCase();
-        return (
-          (cleanMid && rMid === cleanMid) ||
-          (cleanMName && rMName === cleanMName) ||
-          rMid === cleanMid
-        );
-      });
-
-      if (matchingRecords.length > 0) {
-        const latest = matchingRecords[matchingRecords.length - 1];
-        if (String(latest.result || '').toUpperCase().includes('RED')) {
-          red++;
-        } else {
-          ok++;
-        }
-      }
+    machineListWithStats.forEach((item) => {
+      planned += item.totalTasks;
+      done += item.completedTasks;
+      red += item.redCount;
+      ok += item.okCount;
     });
 
-    const done = ok + red;
     const pending = Math.max(0, planned - done);
     const rate = planned > 0 ? Math.min(100, Math.round((done / planned) * 100)) : 0;
 
@@ -130,43 +239,129 @@ export const HomeView: React.FC<HomeViewProps> = ({
       pendingCount: pending,
       completionRate: rate,
     };
-  }, [activeTemplates, currentWeekRecords]);
+  }, [machineListWithStats]);
+
+  // Filtered machine rows based on search, group and status
+  const filteredMachineRows = useMemo(() => {
+    return machineListWithStats.filter((item) => {
+      const m = item.machine;
+      const search = searchQuery.toLowerCase().trim();
+      const codeStr = (m.machineCode || m.code || item.costCenter || '').toLowerCase();
+      const nameStr = (m.machineName || '').toLowerCase();
+      const groupStr = item.group.toLowerCase();
+
+      const matchesSearch =
+        !search ||
+        nameStr.includes(search) ||
+        codeStr.includes(search) ||
+        groupStr.includes(search);
+      if (!matchesSearch) return false;
+
+      if (selectedGroup !== 'all' && item.group !== selectedGroup) return false;
+
+      if (statusFilter === 'pending') return item.isPending;
+      if (statusFilter === 'completed') return item.isCompleted;
+      if (statusFilter === 'red') return item.hasRed;
+      return true;
+    });
+  }, [machineListWithStats, searchQuery, statusFilter, selectedGroup]);
+
+  // Grouped machine rows for clean section headers
+  const groupedMachineRows = useMemo(() => {
+    const groups: {
+      key: '01-350522-Bakim ve Onarim & Üretim' | 'Üretim';
+      title: string;
+      subtitle: string;
+      iconType: 'wrench' | 'factory';
+      items: typeof filteredMachineRows;
+      totalPlanned: number;
+      completed: number;
+    }[] = [
+      {
+        key: '01-350522-Bakim ve Onarim & Üretim',
+        title: '01-350522 - Bakım ve Onarım & Üretim',
+        subtitle: 'Kompresörler, Jenaratörler, Fabrika Su ve Altyapı Sistemleri',
+        iconType: 'wrench',
+        items: [],
+        totalPlanned: 0,
+        completed: 0,
+      },
+      {
+        key: 'Üretim',
+        title: 'Üretim',
+        subtitle: 'Fin Makineleri, Fırın CAB, Test, Yağ Alma ve İmalat Hatları',
+        iconType: 'factory',
+        items: [],
+        totalPlanned: 0,
+        completed: 0,
+      },
+    ];
+
+    filteredMachineRows.forEach((item) => {
+      const targetKey = item.group === '01-350522-Bakim ve Onarim & Üretim'
+        ? '01-350522-Bakim ve Onarim & Üretim'
+        : 'Üretim';
+      const grp = groups.find((g) => g.key === targetKey);
+      if (grp) {
+        grp.items.push(item);
+        grp.totalPlanned += item.totalTasks;
+        grp.completed += item.completedTasks;
+      }
+    });
+
+    if (selectedGroup !== 'all') {
+      return groups.filter((g) => g.key === selectedGroup && g.items.length > 0);
+    }
+
+    return groups.filter((g) => g.items.length > 0);
+  }, [filteredMachineRows, selectedGroup]);
+
+  // Click on a row: navigates directly to operator maintenance screen and starts QR scanning immediately
+  const handleOpenMaintenance = (m: Machine) => {
+    if (onSelectMachine) {
+      onSelectMachine(m);
+    } else {
+      onNavigate('operator');
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3.5 sm:py-6 space-y-4 sm:space-y-6">
-      {/* Industrial Hero Command Banner (Sarı - Siyah Konsept) */}
-      <div className="bg-gradient-to-br from-[#1c283e] via-[#162133] to-[#22334e] text-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden border border-yellow-500/40">
+      {/* Hero Command Banner */}
+      <div className="bg-gradient-to-br from-[#1c283e] via-[#162133] to-[#22334e] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl relative overflow-hidden border border-yellow-500/40">
         <div className="relative z-10 max-w-3xl">
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2">
             <span className="px-2.5 py-0.5 bg-yellow-400/20 text-yellow-300 rounded-md text-[11px] sm:text-xs font-mono font-black border border-yellow-400/40">
               Dönem: {currentWeek}
             </span>
           </div>
 
-          <h2 className="text-xl sm:text-3xl font-black tracking-tight text-white">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
             Hoş Geldiniz, <span className="text-yellow-400">{operatorName}</span>
           </h2>
+          <p className="text-xs sm:text-sm text-slate-300 mt-1">
+            Makinelerin durumunu inceleyin; satırın üzerine tıklayarak QR kodunu okutup periyodik bakımı gerçekleştirin.
+          </p>
         </div>
 
-        {/* Technical background accents */}
         <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-15 bg-[radial-gradient(#facc15_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
         <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl pointer-events-none" />
       </div>
 
-      {/* KPI Stats Cards (Sarı - Siyah Konsept) */}
+      {/* KPI Stats Summary Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4">
         {/* Planlanan */}
-        <div className="bg-[#1b263b] p-3.5 sm:p-4 rounded-2xl border border-slate-700/70 hover:border-yellow-500/50 shadow-md transition-all">
+        <div className="bg-[#1b263b] p-3 sm:p-4 rounded-2xl border border-slate-700/70 shadow-md">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Planlanan</span>
             <Clock className="w-4 h-4 text-yellow-400" />
           </div>
           <div className="text-xl sm:text-2xl font-black text-yellow-400 font-mono">{totalPlanned}</div>
-          <div className="text-[11px] text-slate-400 font-medium mt-0.5">{machinesWithTasksCount} Makine</div>
+          <div className="text-[11px] text-slate-400 font-medium mt-0.5">{machineListWithStats.length} Makine</div>
         </div>
 
         {/* Tamamlanan */}
-        <div className="bg-[#1b263b] p-3.5 sm:p-4 rounded-2xl border border-slate-700/70 hover:border-yellow-500/50 shadow-md transition-all">
+        <div className="bg-[#1b263b] p-3 sm:p-4 rounded-2xl border border-slate-700/70 shadow-md">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-400">Tamamlanan</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -176,7 +371,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         {/* Bekleyen */}
-        <div className="bg-[#1b263b] p-3.5 sm:p-4 rounded-2xl border border-slate-700/70 hover:border-yellow-500/50 shadow-md transition-all">
+        <div className="bg-[#1b263b] p-3 sm:p-4 rounded-2xl border border-slate-700/70 shadow-md">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-amber-400">Bekleyen</span>
             <Clock className="w-4 h-4 text-amber-400" />
@@ -186,7 +381,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         {/* UYGUN */}
-        <div className="bg-[#1b263b] p-3.5 sm:p-4 rounded-2xl border border-slate-700/70 hover:border-yellow-500/50 shadow-md transition-all">
+        <div className="bg-[#1b263b] p-3 sm:p-4 rounded-2xl border border-slate-700/70 shadow-md">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-300">UYGUN</span>
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
@@ -196,19 +391,26 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         {/* RED Arıza */}
-        <div className={`p-3.5 sm:p-4 rounded-2xl border shadow-md transition-all ${
-          redCount > 0 ? 'bg-rose-950/40 border-rose-600/70' : 'bg-[#1b263b] border-slate-700/70'
-        }`}>
+        <div
+          onClick={() => redCount > 0 && onNavigate('redList')}
+          className={`p-3 sm:p-4 rounded-2xl border shadow-md transition-all ${
+            redCount > 0
+              ? 'bg-rose-950/40 border-rose-600/70 cursor-pointer hover:bg-rose-950/60'
+              : 'bg-[#1b263b] border-slate-700/70'
+          }`}
+        >
           <div className="flex items-center justify-between text-rose-400 mb-1">
             <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider">RED Arıza</span>
             <AlertTriangle className={`w-4 h-4 ${redCount > 0 ? 'text-rose-400 animate-pulse' : 'text-slate-500'}`} />
           </div>
           <div className="text-xl sm:text-2xl font-black text-rose-400 font-mono">{redCount}</div>
-          <div className="text-[11px] text-rose-300 font-medium mt-0.5">Kritik müdahale</div>
+          <div className="text-[11px] text-rose-300 font-medium mt-0.5">
+            {redCount > 0 ? 'Tıklayıp Listeyi Gör' : 'Kritik müdahale'}
+          </div>
         </div>
 
         {/* İlerleme % */}
-        <div className="bg-[#1b263b] p-3.5 sm:p-4 rounded-2xl border border-slate-700/70 hover:border-yellow-500/50 shadow-md transition-all">
+        <div className="bg-[#1b263b] p-3 sm:p-4 rounded-2xl border border-slate-700/70 shadow-md">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-yellow-400">İlerleme</span>
             <TrendingUp className="w-4 h-4 text-yellow-400" />
@@ -225,107 +427,324 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </div>
 
-      {/* Ana Navigasyon Kartları (Diğer Kartlar) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Kart 1: Operatör Bakım Paneli */}
-        <div
-          onClick={() => onNavigate('operator')}
-          className="group bg-[#1b263b] rounded-2xl p-6 border border-slate-700/70 hover:border-yellow-400 shadow-lg hover:shadow-yellow-500/10 cursor-pointer transition-all flex flex-col justify-between"
-        >
-          <div>
-            <div className="w-12 h-12 rounded-xl bg-yellow-400/20 text-yellow-400 border border-yellow-400/40 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Wrench className="w-6 h-6 text-yellow-400" />
-            </div>
-            <h3 className="text-lg font-black text-white group-hover:text-yellow-400 transition-colors mb-1.5">
-              Operatör Bakım Paneli
+      {/* SADE SATIR LİSTESİ: Butonsuz, doğrudan tıklanabilir makine satırları */}
+      <div className="bg-[#121a29] rounded-2xl sm:rounded-3xl border border-slate-700/80 p-3 sm:p-5 shadow-xl space-y-4">
+        {/* Başlık & Grup / Durum Filtreleri */}
+        <div className="space-y-3 pb-3 border-b border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block shadow-xs" />
+              <span>Haftalık Makine Bakım Listesi</span>
             </h3>
-            <p className="text-sm text-slate-300 leading-relaxed">
-              Makineleri seçin, QR kodlarını okutun ve birimlere göre renklendirilmiş periyodik kontrol adımlarını gerçekleştirin.
-            </p>
-          </div>
-          <div className="mt-5 pt-4 border-t border-slate-700/70 flex items-center justify-between text-yellow-400 font-bold text-sm">
-            <span>Kontrole Başla ({machinesWithTasksCount} Bakımlı Makine)</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
-          </div>
-        </div>
 
-        {/* Kart 2: RED Verilen Bakımlar */}
-        <div
-          onClick={() => onNavigate('redList')}
-          className="group bg-[#1b263b] rounded-2xl p-6 border border-slate-700/70 hover:border-rose-500 shadow-lg hover:shadow-rose-500/10 cursor-pointer transition-all flex flex-col justify-between"
-        >
-          <div>
-            <div className="w-12 h-12 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative">
-              <AlertTriangle className="w-6 h-6 text-rose-400" />
-              {redCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-rose-600 text-white rounded-full text-[11px] font-black flex items-center justify-center animate-pulse shadow-md">
-                  {redCount}
-                </span>
+            {/* Durum Filtreleri (Tümü, Bekleyen, Tamamlanan, RED) */}
+            <div className="flex flex-wrap items-center gap-1.5 bg-[#0b121e] p-1 rounded-xl border border-slate-800 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  statusFilter === 'all'
+                    ? 'bg-yellow-400 text-black font-black shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Tümü ({machineListWithStats.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('pending')}
+                className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  statusFilter === 'pending'
+                    ? 'bg-amber-400 text-black font-black shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Bekleyen ({machineListWithStats.filter((i) => i.isPending).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('completed')}
+                className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  statusFilter === 'completed'
+                    ? 'bg-emerald-400 text-black font-black shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Tamamlanan ({machineListWithStats.filter((i) => i.isCompleted).length})
+              </button>
+              {machineListWithStats.some((i) => i.hasRed) && (
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('red')}
+                  className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    statusFilter === 'red'
+                      ? 'bg-rose-600 text-white font-black shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  RED Arızalı ({machineListWithStats.filter((i) => i.hasRed).length})
+                </button>
               )}
             </div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <h3 className="text-lg font-black text-white group-hover:text-rose-400 transition-colors">
-                RED Verilen Bakımlar
-              </h3>
-              {redCount > 0 && (
-                <span className="text-[10px] bg-rose-950 text-rose-300 font-black px-2 py-0.5 rounded-full border border-rose-700">
-                  {redCount} Arıza
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-slate-300 leading-relaxed">
-              Operatörlerin uygun bulmadığı kritik arıza kayıtları, fotoğraflı kanıtlar ve "Giderildi" aksiyon takibi.
-            </p>
           </div>
-          <div className="mt-5 pt-4 border-t border-slate-700/70 flex items-center justify-between text-rose-400 font-bold text-sm">
-            <span>{redCount > 0 ? `${redCount} Açık Arıza Mevcut` : 'Arızaları İncele'}</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+
+          {/* Departman / Grup Filtre Sekmeleri: 01-350522-Bakim ve Onarim & Üretim */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-bold text-slate-400 mr-1 hidden sm:inline">Grup:</span>
+            <button
+              type="button"
+              onClick={() => setSelectedGroup('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                selectedGroup === 'all'
+                  ? 'bg-yellow-400 text-black border-yellow-400 shadow-md font-black'
+                  : 'bg-[#090f19] text-slate-300 border-slate-700/80 hover:border-slate-500'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Tüm Gruplar</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                selectedGroup === 'all' ? 'bg-black/20 text-black' : 'bg-slate-800 text-slate-400'
+              }`}>
+                {machineListWithStats.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedGroup('01-350522-Bakim ve Onarim & Üretim')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                selectedGroup === '01-350522-Bakim ve Onarim & Üretim'
+                  ? 'bg-yellow-400 text-black border-yellow-400 shadow-md font-black'
+                  : 'bg-[#090f19] text-slate-300 border-slate-700/80 hover:border-slate-500'
+              }`}
+            >
+              <Wrench className="w-3.5 h-3.5" />
+              <span>01-350522 - Bakım ve Onarım & Üretim</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                selectedGroup === '01-350522-Bakim ve Onarim & Üretim' ? 'bg-black/20 text-black' : 'bg-slate-800 text-yellow-400'
+              }`}>
+                {groupCounts.bakimOnarim}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedGroup('Üretim')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                selectedGroup === 'Üretim'
+                  ? 'bg-yellow-400 text-black border-yellow-400 shadow-md font-black'
+                  : 'bg-[#090f19] text-slate-300 border-slate-700/80 hover:border-slate-500'
+              }`}
+            >
+              <Factory className="w-3.5 h-3.5" />
+              <span>Üretim</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                selectedGroup === 'Üretim' ? 'bg-black/20 text-black' : 'bg-slate-800 text-cyan-300'
+              }`}>
+                {groupCounts.uretim}
+              </span>
+            </button>
           </div>
         </div>
 
-        {/* Kart 3: Bakım Raporları */}
-        <div
-          onClick={() => onNavigate('reports')}
-          className="group bg-[#1b263b] rounded-2xl p-6 border border-slate-700/70 hover:border-emerald-400 shadow-lg hover:shadow-emerald-500/10 cursor-pointer transition-all flex flex-col justify-between"
-        >
-          <div>
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <BarChart3 className="w-6 h-6 text-emerald-400" />
-            </div>
-            <h3 className="text-lg font-black text-white group-hover:text-emerald-400 transition-colors mb-1.5">
-              Bakım Raporları
-            </h3>
-            <p className="text-sm text-slate-300 leading-relaxed">
-              Makine ve birim bazında detaylı istatistikler, Excel (CSV) dışa aktarımı, yazdırma ve tek tıkla PDF e-posta gönderimi.
-            </p>
-          </div>
-          <div className="mt-5 pt-4 border-t border-slate-700/70 flex items-center justify-between text-emerald-400 font-bold text-sm">
-            <span>Raporları Görüntüle</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
-          </div>
+        {/* Arama Çubuğu */}
+        <div className="relative">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Makine adı, kod veya grup ile ara..."
+            className="w-full pl-10 pr-9 py-2 bg-[#090e17] border border-slate-700/80 rounded-xl text-xs sm:text-sm font-semibold text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-400 transition-all"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-2.5 text-slate-400 hover:text-white p-0.5 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        {/* Kart 4: Admin Yönetim Paneli (if admin) */}
-        {isAdmin && (
-          <div
-            onClick={() => onNavigate('admin')}
-            className="group bg-[#1b263b] rounded-2xl p-6 border border-slate-700/70 hover:border-amber-400 shadow-lg hover:shadow-amber-500/10 cursor-pointer transition-all flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Settings className="w-6 h-6 text-amber-400" />
-              </div>
-              <h3 className="text-lg font-black text-white group-hover:text-amber-400 transition-colors mb-1.5">
-                Admin Bakım Tanımı
-              </h3>
-              <p className="text-sm text-slate-300 leading-relaxed">
-                Makinelere yeni kontrol maddeleri ekleyin, birim renklerini düzenleyin, fotoğraf zorunluluğu koyun ve referans resim yükleyin.
-              </p>
-            </div>
-            <div className="mt-5 pt-4 border-t border-slate-700/70 flex items-center justify-between text-amber-400 font-bold text-sm">
-              <span>Tanımları Yönet ({templates.length} Madde)</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
-            </div>
+        {/* GRUPLANDIRILMIŞ MAKİNE LİSTESİ: 2 Satırlı Kartlar (Rakamlar Altta) */}
+        {groupedMachineRows.length === 0 ? (
+          <div className="text-center py-10 bg-[#0d1421] rounded-2xl border border-dashed border-slate-700 p-6 space-y-2">
+            <Wrench className="w-8 h-8 text-slate-500 mx-auto" />
+            <h4 className="text-xs sm:text-sm font-bold text-slate-300">Makine bulunamadı</h4>
+            <p className="text-[11px] text-slate-500">
+              Arama kriterini veya grup filtresini değiştirerek tekrar deneyiniz.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {groupedMachineRows.map((group) => {
+              const groupRate = group.totalPlanned > 0
+                ? Math.round((group.completed / group.totalPlanned) * 100)
+                : 0;
+
+              return (
+                /* TEK BİR ANA KART: Grup başlığı ve içindeki tüm makineler bu tek kartın içinde */
+                <div
+                  key={group.key}
+                  className="rounded-2xl bg-[#0c1421] border border-slate-700/80 p-3 sm:p-4 shadow-lg space-y-3"
+                >
+                  {/* Grup Başlık Alanı (Ayırıcı çizgi yok) */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 flex items-center justify-center shrink-0">
+                        {group.iconType === 'wrench' ? (
+                          <Wrench className="w-4 h-4 text-yellow-400" />
+                        ) : (
+                          <Factory className="w-4 h-4 text-cyan-300" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wide">
+                            {group.title}
+                          </h4>
+                          <span className="px-2 py-0.5 rounded-full bg-slate-800 text-yellow-300 text-[10px] font-mono font-bold border border-slate-700">
+                            {group.items.length} Makine
+                          </span>
+                        </div>
+                        {group.subtitle && (
+                          <p className="text-[10px] sm:text-[11px] text-slate-400">
+                            {group.subtitle}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Grup İlerleme Bilgisi */}
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      <span className="text-[11px] font-mono text-slate-300">
+                        <span className="text-emerald-400 font-bold">{group.completed}</span>
+                        <span className="text-slate-500"> / </span>
+                        <span>{group.totalPlanned} Kontrol</span>
+                      </span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-mono font-black border ${
+                        groupRate === 100
+                          ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/50'
+                          : 'bg-yellow-950/60 text-yellow-300 border-yellow-500/50'
+                      }`}>
+                        %{groupRate}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Bu Kartın İçindeki Makineler (Ayırıcı çizgi olmadan doğrudan kartın içinde) */}
+                  <div className="space-y-2">
+                    {group.items.map((item) => {
+                      const m = item.machine;
+                      const machineId = m.id || m.machineName;
+
+                      return (
+                        <div
+                          key={machineId}
+                          onClick={() => handleOpenMaintenance(m)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleOpenMaintenance(m);
+                            }
+                          }}
+                          className={`group relative rounded-xl border transition-all duration-150 cursor-pointer p-3 sm:p-3.5 select-none ${
+                            item.hasRed
+                              ? 'bg-[#151a27] border-rose-600/70 hover:border-rose-400 hover:bg-[#1a2030]'
+                              : item.isCompleted
+                              ? 'bg-[#111a28] border-emerald-500/40 hover:border-emerald-400 hover:bg-[#142032]'
+                              : 'bg-[#111a28] border-slate-800/90 hover:border-yellow-400/80 hover:bg-[#162337]'
+                          } shadow-sm hover:shadow-md active:scale-[0.995] space-y-2`}
+                        >
+                          {/* 1. SATIR (ÜST): Makine Adı (İnce ve Küçük Yazı) + (Varsa RED Uyarısı) + Sayı Özeti + QR İkonu */}
+                          <div className="flex items-center justify-between gap-2.5">
+                            {/* Sol: Makine Adı (Grup ismi kaldırıldı, font küçültüldü ve ince yazı yapıldı) */}
+                            <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap min-w-0">
+                              <span className="text-yellow-300 font-light text-xs sm:text-sm tracking-wide group-hover:text-yellow-200 transition-colors">
+                                {m.machineName}
+                              </span>
+
+                              {/* RED Uyarısı Varsa */}
+                              {item.hasRed && (
+                                <span className="px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1 animate-pulse shrink-0">
+                                  <AlertTriangle className="w-3 h-3 text-white" />
+                                  <span>{item.redCount} RED</span>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Sağ: Yapılan / Toplam Sayısı Rozeti & QR İkonu */}
+                            <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#080d16] border border-slate-700/80 text-[11px] sm:text-xs font-mono font-black shrink-0">
+                                <span className={item.completedTasks === item.totalTasks ? 'text-emerald-400' : 'text-yellow-400'}>
+                                  {item.completedTasks}
+                                </span>
+                                <span className="text-slate-500">/</span>
+                                <span className="text-slate-300">{item.totalTasks}</span>
+                              </div>
+
+                              {/* QR Kod İkonu & Yönlendirme Oku */}
+                              <div className="flex items-center text-slate-500 group-hover:text-yellow-400 transition-colors">
+                                <QrCode className="w-4 h-4 mr-0.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 2. SATIR (ALT): Rakamlar Altta - Madde Rozetleri (1, 2, 3...) */}
+                          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pt-0.5">
+                            {item.tasksWithStatus.map(({ status }, idx) => {
+                              const taskNumber = idx + 1;
+                              const isDone = status === 'tamamlanan';
+                              const isRed = status === 'red';
+
+                              if (isDone) {
+                                return (
+                                  <div
+                                    key={idx}
+                                    title={`Madde ${taskNumber}: Yapıldı (UYGUN)`}
+                                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0"
+                                  >
+                                    {taskNumber}
+                                  </div>
+                                );
+                              }
+
+                              if (isRed) {
+                                return (
+                                  <div
+                                    key={idx}
+                                    title={`Madde ${taskNumber}: RED Arıza Kaydı!`}
+                                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0 animate-pulse"
+                                  >
+                                    {taskNumber}
+                                  </div>
+                                );
+                              }
+
+                              // Bekleyen Madde: Koyu arka plan, sarı kenarlık ve sarı numara
+                              return (
+                                <div
+                                  key={idx}
+                                  title={`Madde ${taskNumber}: Bekliyor`}
+                                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#0a101b] border-2 border-yellow-400/80 text-yellow-300 font-black text-xs flex items-center justify-center shrink-0 shadow-xs group-hover:border-yellow-300"
+                                >
+                                  {taskNumber}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
