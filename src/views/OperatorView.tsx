@@ -250,6 +250,22 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
   const [refImageModalOpen, setRefImageModalOpen] = useState(false);
   const [proofImageModalOpen, setProofImageModalOpen] = useState(false);
 
+  // Next task transition modal ("ortada 3. bakıma geçildi gibi yazı çıksın")
+  const [nextTaskModal, setNextTaskModal] = useState<{
+    isOpen: boolean;
+    taskNumber: number;
+    totalTasks: number;
+    nextTask: MaintenanceTemplate | null;
+    savedTaskTitle: string;
+    result: 'UYGUN' | 'RED';
+    isCompletedAll: boolean;
+  } | null>(null);
+  const [modalCountdown, setModalCountdown] = useState<number>(2);
+  const nextTaskModalRef = useRef(nextTaskModal);
+  useEffect(() => {
+    nextTaskModalRef.current = nextTaskModal;
+  }, [nextTaskModal]);
+
 
   // Real-time background upload queue
   const [uploadQueue, setUploadQueue] = useState<QueuedRecord[]>(() => uploadQueueService.getQueue());
@@ -712,6 +728,38 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
     setSubStep('control');
   };
 
+  // Confirm Next Task Modal & proceed to target task or task list
+  const handleConfirmNextTaskModal = () => {
+    const currentModal = nextTaskModalRef.current;
+    if (!currentModal) return;
+    const { nextTask, isCompletedAll } = currentModal;
+    setNextTaskModal(null);
+    if (isCompletedAll || !nextTask) {
+      setSubStep('tasks');
+    } else {
+      handleOpenTask(nextTask);
+    }
+  };
+
+  // Auto-advance countdown for nextTaskModal
+  useEffect(() => {
+    if (!nextTaskModal || !nextTaskModal.isOpen) return;
+
+    setModalCountdown(2);
+    const interval = setInterval(() => {
+      setModalCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          handleConfirmNextTaskModal();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [nextTaskModal?.taskNumber, nextTaskModal?.isOpen]);
+
   // Handle image upload / camera capture with fast client compression
   const handleImageCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -831,18 +879,55 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
           : machineTasks;
 
       const currentIndex = candidateList.findIndex((t) => t.templateId === selectedTask.templateId);
-      const nextPendingTask = candidateList.find(
+      let nextPendingTask = candidateList.find(
         (t, idx) =>
           idx > currentIndex &&
           t.templateId !== selectedTask.templateId &&
           getTaskStatus(selectedMachine.id, t.templateId) === 'bekleyen'
       );
 
-      // Instant transition (0ms wait - "sistem kayıt göndersin, sen kayıt edildi bilgisi alma")
+      // If no next pending task after currentIndex in this region, check any other pending in this region
+      if (!nextPendingTask) {
+        nextPendingTask = candidateList.find(
+          (t) =>
+            t.templateId !== selectedTask.templateId &&
+            getTaskStatus(selectedMachine.id, t.templateId) === 'bekleyen'
+        );
+      }
+
+      // If still no pending task in this region, check all machine tasks
+      if (!nextPendingTask) {
+        nextPendingTask = machineTasks.find(
+          (t) =>
+            t.templateId !== selectedTask.templateId &&
+            getTaskStatus(selectedMachine.id, t.templateId) === 'bekleyen'
+        );
+      }
+
+      // 5. Open transition modal in center ("ortada 3. bakıma geçildi gibi yazı çıksın")
       if (nextPendingTask) {
-        handleOpenTask(nextPendingTask);
+        const nextIndex = machineTasks.findIndex((t) => t.templateId === nextPendingTask.templateId);
+        const nextNumber = nextIndex >= 0 ? nextIndex + 1 : (nextPendingTask.orderNo || currentIndex + 2);
+
+        setNextTaskModal({
+          isOpen: true,
+          taskNumber: nextNumber,
+          totalTasks: totalTasksCount,
+          nextTask: nextPendingTask,
+          savedTaskTitle: selectedTask.task,
+          result,
+          isCompletedAll: false,
+        });
       } else {
-        setSubStep('tasks');
+        setNextTaskModal({
+          isOpen: true,
+          taskNumber: totalTasksCount,
+          totalTasks: totalTasksCount,
+          nextTask: null,
+          savedTaskTitle: selectedTask.task,
+          result,
+          isCompletedAll: true,
+        });
       }
     } catch (err: any) {
       setSaveMessage({ type: 'error', text: err.message || 'Kayıt gönderilirken hata oluştu.' });
@@ -2131,6 +2216,122 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
           handleOpenTask(t);
         }}
       />
+
+      {/* Ortada 3. Bakıma Geçildi Modal Ekranı ("kontrolü kayıt et dediğimizde modal ekran çıksın ortada 3.bakıma geçildi gibi yazı çıksın") */}
+      {nextTaskModal && nextTaskModal.isOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 select-none animate-in fade-in duration-200"
+        >
+          <div className="bg-[#131d2e] border-2 border-yellow-400 rounded-3xl p-6 sm:p-8 max-w-sm sm:max-w-md w-full shadow-2xl shadow-yellow-500/20 text-center relative overflow-hidden flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
+            {/* Glowing background halo */}
+            <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-48 bg-yellow-400/20 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Top Close button */}
+            <button
+              type="button"
+              onClick={() => {
+                setNextTaskModal(null);
+                setSubStep('tasks');
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+              title="Kapat ve Listeye Dön"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Top Icon Badge */}
+            <div className="w-16 h-16 rounded-2xl bg-yellow-400/20 border-2 border-yellow-400 flex items-center justify-center shadow-lg relative z-10">
+              {nextTaskModal.isCompletedAll ? (
+                <Check className="w-9 h-9 text-emerald-400 stroke-[3]" />
+              ) : (
+                <CheckCircle2 className="w-9 h-9 text-yellow-400 animate-pulse" />
+              )}
+            </div>
+
+            {/* Status Pill */}
+            <div className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+              <span>Kontrol Kaydı Alındı ({nextTaskModal.result === 'RED' ? 'RED Arıza' : 'UYGUN'})</span>
+            </div>
+
+            {/* The Main Announcement in the Center */}
+            <div className="space-y-1 w-full">
+              <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                {nextTaskModal.isCompletedAll ? (
+                  <span className="text-emerald-400">Tüm Bakımlar Tamamlandı!</span>
+                ) : (
+                  <span className="text-yellow-400 font-extrabold drop-shadow-sm">
+                    {nextTaskModal.taskNumber}. Bakıma Geçildi
+                  </span>
+                )}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-300 font-medium line-clamp-2 px-1">
+                {nextTaskModal.isCompletedAll
+                  ? `${selectedMachine?.machineName} makinesinin bu haftaki tüm kontrolleri başarıyla tamamlandı.`
+                  : nextTaskModal.nextTask?.task || 'Sonraki kontrol maddesine geçiliyor.'}
+              </p>
+            </div>
+
+            {/* Next Task Card Info */}
+            {!nextTaskModal.isCompletedAll && nextTaskModal.nextTask && (
+              <div className="w-full bg-[#1b263b] border border-yellow-400/30 rounded-2xl p-3 text-xs text-left space-y-1.5">
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="text-slate-400">Makine:</span>
+                  <span className="font-bold text-white truncate max-w-[180px]">
+                    {selectedMachine?.machineName}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="text-slate-400">Bölge:</span>
+                  <span className="font-bold text-yellow-300">
+                    {nextTaskModal.nextTask.region || 'GENEL'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="text-slate-400">İlerleme:</span>
+                  <span className="font-bold text-emerald-400">
+                    {nextTaskModal.taskNumber} / {nextTaskModal.totalTasks} Kontrol
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="w-full pt-1 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={handleConfirmNextTaskModal}
+                className={`w-full py-3.5 px-6 rounded-2xl font-black text-base shadow-lg transition-transform active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer ${
+                  nextTaskModal.isCompletedAll
+                    ? 'bg-emerald-400 hover:bg-emerald-300 text-black shadow-emerald-500/25 ring-2 ring-emerald-400/50'
+                    : 'bg-yellow-400 hover:bg-yellow-300 text-black shadow-yellow-500/25 ring-2 ring-yellow-400/50'
+                }`}
+              >
+                {nextTaskModal.isCompletedAll ? (
+                  <>
+                    <span>Bakım Listesine Dön</span>
+                    <Check className="w-5 h-5 stroke-[3]" />
+                  </>
+                ) : (
+                  <>
+                    <span>{nextTaskModal.taskNumber}. Bakıma Başla</span>
+                    <ArrowRight className="w-5 h-5 stroke-[3]" />
+                  </>
+                )}
+              </button>
+
+              {!nextTaskModal.isCompletedAll && (
+                <div className="w-full flex items-center justify-between text-[11px] text-slate-400 px-1 pt-1">
+                  <span>Otomatik geçiş:</span>
+                  <span className="font-mono text-yellow-400 font-bold">{modalCountdown} sn</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
