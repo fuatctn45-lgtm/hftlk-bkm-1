@@ -467,6 +467,57 @@ app.all('/api/cmms/proxy', async (req, res) => {
       });
     }
 
+    // Handle saveMaintenanceResultWithImage with instant fire-and-forget (0ms wait - system sends, client does not wait)
+    if (
+      action.toLowerCase() === 'savemaintenanceresultwithimage' ||
+      action.toLowerCase() === 'savemaintenanceresult'
+    ) {
+      invalidateSheetCache();
+      let clientReqId = '';
+      try {
+        const payloadStr = req.body?.payload || req.query?.payload;
+        if (payloadStr) {
+          const parsed = typeof payloadStr === 'string' ? JSON.parse(payloadStr) : payloadStr;
+          clientReqId = parsed.clientRequestId || '';
+        }
+      } catch {}
+
+      const recordId = clientReqId || `REC-${Date.now().toString(36).toUpperCase()}`;
+
+      // Respond to client IMMEDIATELY (0ms wait)
+      res.json({
+        success: true,
+        recordId,
+        message: 'Kayıt gönderildi, arka planda E-Tabloya yazılıyor.'
+      });
+
+      // Transmit to Google Apps Script asynchronously in background
+      (async () => {
+        try {
+          const formParams = new URLSearchParams();
+          if (req.body && typeof req.body === 'object') {
+            for (const [k, v] of Object.entries(req.body)) {
+              formParams.set(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
+            }
+          }
+          await fetch(`${APPS_SCRIPT_URL}?action=${encodeURIComponent(action)}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formParams.toString(),
+            redirect: 'follow',
+            signal: AbortSignal.timeout(45000),
+          });
+          invalidateSheetCache();
+        } catch (bgErr) {
+          console.warn('Background Apps Script save error:', bgErr);
+        }
+      })();
+
+      return;
+    }
+
     // Handle login directly against "veri" sheet (instant auth, 0ms latency)
     if (action === 'login') {
       const password = String(req.query.password || req.body?.password || '').trim();

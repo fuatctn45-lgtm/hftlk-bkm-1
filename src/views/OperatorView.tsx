@@ -43,7 +43,7 @@ interface OperatorViewProps {
   machines: Machine[];
   templates: MaintenanceTemplate[];
   records: MaintenanceRecord[];
-  onRecordSaved: () => void;
+  onRecordSaved?: (newRecord?: MaintenanceRecord) => void;
   onNavigateHome: () => void;
   initialMachine?: Machine | null;
   initialTemplateId?: string | null;
@@ -801,13 +801,30 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
         } catch {}
       }
 
-      setSaveMessage({
-        type: 'success',
-        text: `Kayıt sıraya alındı ve arka planda aktarılıyor! (${result})`,
-      });
-      onRecordSaved();
+      // 3. Optimistic local record for instant UI synchronization (0ms delay)
+      const optimisticRecord: MaintenanceRecord = {
+        recordId: queuedItem.id,
+        machineId: selectedMachine.id,
+        machineName: selectedMachine.machineName,
+        templateId: selectedTask.templateId,
+        task: selectedTask.task,
+        measuredValue: measuredValue.trim() || undefined,
+        result,
+        description: description.trim() || undefined,
+        operator: user.operator || user.name || user.fullName || 'Operatör',
+        operatorRole: user.role || 'operator',
+        proofImageUrl: proofImage || undefined,
+        weekKey: currentWeek,
+        createdAt: new Date().toISOString(),
+        date: new Date().toLocaleDateString('tr-TR'),
+        time: new Date().toLocaleTimeString('tr-TR'),
+      };
 
-      // 3. Find next pending task on this machine (prioritizing the currently active region)
+      if (onRecordSaved) {
+        onRecordSaved(optimisticRecord);
+      }
+
+      // 4. Find next pending task on this machine (prioritizing the currently active region)
       const candidateList =
         selectedRegionFilter !== 'all'
           ? machineTasks.filter((t) => ((t.region || '').trim() || 'GENEL') === selectedRegionFilter)
@@ -821,15 +838,14 @@ export const OperatorView: React.FC<OperatorViewProps> = ({
           getTaskStatus(selectedMachine.id, t.templateId) === 'bekleyen'
       );
 
-      setTimeout(() => {
-        if (nextPendingTask) {
-          handleOpenTask(nextPendingTask);
-        } else {
-          setSubStep('tasks');
-        }
-      }, 400);
+      // Instant transition (0ms wait - "sistem kayıt göndersin, sen kayıt edildi bilgisi alma")
+      if (nextPendingTask) {
+        handleOpenTask(nextPendingTask);
+      } else {
+        setSubStep('tasks');
+      }
     } catch (err: any) {
-      setSaveMessage({ type: 'error', text: err.message || 'Kayıt sıraya eklenirken hata oluştu.' });
+      setSaveMessage({ type: 'error', text: err.message || 'Kayıt gönderilirken hata oluştu.' });
     } finally {
       setSaveLoading(false);
     }

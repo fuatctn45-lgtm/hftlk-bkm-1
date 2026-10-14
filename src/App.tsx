@@ -255,7 +255,11 @@ export default function App() {
             records={records}
             initialMachine={operatorInitialMachine}
             initialTemplateId={operatorInitialTemplateId}
-            onRecordSaved={() => loadData(true)}
+            onRecordSaved={(newRecord) => {
+              if (newRecord) {
+                setRecords((prev) => [newRecord, ...prev.filter((r) => r.recordId !== newRecord.recordId)]);
+              }
+            }}
             onNavigateHome={() => {
               setOperatorInitialMachine(null);
               setOperatorInitialTemplateId(null);

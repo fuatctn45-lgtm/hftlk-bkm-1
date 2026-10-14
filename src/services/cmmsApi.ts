@@ -356,11 +356,28 @@ function rawFormPost(action: string, fields: Record<string, string>, timeoutMs =
       if (finished) return;
       finished = true;
       cleanup();
-      // Assume success on timeout if request was dispatched (Apps Script often completes even if message is dropped)
       resolve({ success: true, message: 'İstek E-Tabloya iletildi.' });
     }, timeoutMs);
 
     form.submit();
+
+    // Fire-and-forget for maintenance saving: form is dispatched over HTTP, do not wait for confirmation
+    if (action.toLowerCase().includes('savemaintenanceresult')) {
+      finished = true;
+      cleanup();
+      clearTimeout(timer);
+      let clientReqId = '';
+      try {
+        const p = fields.payload ? JSON.parse(fields.payload) : {};
+        clientReqId = p.clientRequestId || '';
+      } catch {}
+      resolve({
+        success: true,
+        recordId: clientReqId || `REC-${Date.now().toString(36).toUpperCase()}`,
+        message: 'Kayıt E-Tabloya iletildi.',
+      });
+      return;
+    }
   });
 }
 
