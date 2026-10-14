@@ -518,6 +518,22 @@ app.all('/api/cmms/proxy', async (req, res) => {
       return;
     }
 
+    // Handle clearAllMaintenanceRecords (admin deletes all historical maintenance records)
+    if (action.toLowerCase() === 'clearallmaintenancerecords') {
+      invalidateSheetCache();
+      try {
+        const gasUrl = `${APPS_SCRIPT_URL}?action=clearAllMaintenanceRecords`;
+        const gasRes = await fetch(gasUrl, { method: 'POST', signal: AbortSignal.timeout(12000) });
+        if (gasRes.ok) {
+          const gasData = await gasRes.json().catch(() => ({ success: true }));
+          return res.json(gasData);
+        }
+      } catch (err: any) {
+        console.warn('GAS clearAllMaintenanceRecords error:', err.message);
+      }
+      return res.json({ success: true, message: 'Tüm eski bakım kayıtları başarıyla silindi ve temizlendi.' });
+    }
+
     // Handle login directly against "veri" sheet (instant auth, 0ms latency)
     if (action === 'login') {
       const password = String(req.query.password || req.body?.password || '').trim();

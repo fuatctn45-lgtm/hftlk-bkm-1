@@ -291,6 +291,11 @@ export default function App() {
           <AdminView
             machines={allMachines.length > 0 ? allMachines : machines}
             templates={templates}
+            records={records}
+            onRecordsCleared={() => {
+              setRecords([]);
+              loadData(true);
+            }}
             onTemplatesUpdated={() => loadData(true)}
             onNavigateHome={() => setCurrentScreen('home')}
           />

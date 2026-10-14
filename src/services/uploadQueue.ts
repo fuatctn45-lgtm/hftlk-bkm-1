@@ -78,6 +78,11 @@ class UploadQueueService {
     return this.queue.filter((q) => q.status !== 'completed').length;
   }
 
+  public clear(): void {
+    this.queue = [];
+    this.saveToStorage();
+  }
+
   public subscribe(listener: QueueListener): () => void {
     this.listeners.add(listener);
     listener(this.getQueue());

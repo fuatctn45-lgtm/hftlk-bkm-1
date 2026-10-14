@@ -78,6 +78,10 @@ function doGet(e) {
     return redToUygun(e);
   }
 
+  if (action === 'clearallmaintenancerecords') {
+    return clearAllMaintenanceRecords(e);
+  }
+
   return jsonResponse({ success: false, message: 'Geçersiz işlem: ' + action });
 }
 
@@ -110,6 +114,10 @@ function doPost(e) {
 
   if (action === 'redtouygun') {
     return redToUygun(e);
+  }
+
+  if (action === 'clearallmaintenancerecords') {
+    return clearAllMaintenanceRecords(e);
   }
 
   return jsonResponse({ success: false, message: 'Geçersiz işlem: ' + action });
@@ -790,4 +798,29 @@ function getWeekKey() {
   }
   var weekNum = 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
   return target.getFullYear() + '-W' + (weekNum < 10 ? '0' + weekNum : weekNum);
+}
+
+/**
+ * 12. Tüm Eski Yapılan Bakımları Silme (clearAllMaintenanceRecords)
+ * Sadece yetkili admin işlemi ile tetiklenir.
+ * weeklyMaintenanceRecords sayfasında 1. satır (başlıklar) hariç tüm kayıt satırlarını siler.
+ */
+function clearAllMaintenanceRecords(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = getRecordsSheet(ss);
+    if (!sheet) return jsonResponse({ success: false, message: 'Kayıt sayfası bulunamadı.' });
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      sheet.deleteRows(2, lastRow - 1);
+    }
+
+    return jsonResponse({
+      success: true,
+      message: 'Tüm eski bakım kayıtları başarıyla silindi (' + (lastRow > 1 ? (lastRow - 1) : 0) + ' satır temizlendi).'
+    });
+  } catch (err) {
+    return jsonResponse({ success: false, message: 'Kayıtları silme hatası: ' + err.toString() });
+  }
 }

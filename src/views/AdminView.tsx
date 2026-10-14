@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { MaintenanceTemplate, Machine, DEPARTMENTS, DepartmentConfig } from '../types/cmms';
+import { MaintenanceTemplate, Machine, MaintenanceRecord, DEPARTMENTS, DepartmentConfig } from '../types/cmms';
 import { cmmsApi } from '../services/cmmsApi';
 import { extractDriveFileId } from './RedListView';
 import { CODE_GS_SOURCE } from '../constants/codeGsSource';
@@ -17,6 +17,9 @@ import {
   Loader2,
   Wrench,
   Shield,
+  ShieldAlert,
+  KeyRound,
+  EyeOff,
   Layers,
   AlertTriangle,
   Image as ImageIcon,
@@ -31,6 +34,8 @@ import {
 interface AdminViewProps {
   machines: Machine[];
   templates: MaintenanceTemplate[];
+  records?: MaintenanceRecord[];
+  onRecordsCleared?: () => void;
   onTemplatesUpdated: () => void;
   onNavigateHome: () => void;
 }
@@ -38,6 +43,8 @@ interface AdminViewProps {
 export const AdminView: React.FC<AdminViewProps> = ({
   machines,
   templates,
+  records,
+  onRecordsCleared,
   onTemplatesUpdated,
   onNavigateHome,
 }) => {
@@ -82,6 +89,74 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [saveLoading, setSaveLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Eski Yapılan Bakımları Silme Modalı State'leri ("admin tüm eski yapılan bakımları silsin ama sil dedğinde şifre istesin şifresini girince silsin")
+  const [clearRecordsModalOpen, setClearRecordsModalOpen] = useState(false);
+  const [clearPassword, setClearPassword] = useState('');
+  const [showClearPassword, setShowClearPassword] = useState(false);
+  const [clearPasswordError, setClearPasswordError] = useState('');
+  const [clearRecordsLoading, setClearRecordsLoading] = useState(false);
+  const [clearSuccessMessage, setClearSuccessMessage] = useState<string | null>(null);
+
+  const handleConfirmClearRecords = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = clearPassword.trim();
+    if (!trimmed) {
+      setClearPasswordError('Lütfen yetkili Admin şifresini giriniz.');
+      return;
+    }
+
+    setClearRecordsLoading(true);
+    setClearPasswordError('');
+
+    try {
+      let isAuthorized = false;
+
+      // 1. Direct login verification with cmmsApi
+      try {
+        const loginRes = await cmmsApi.login(trimmed);
+        if (loginRes.success && loginRes.user) {
+          const role = String(loginRes.user.role || '').toLowerCase();
+          if (role.includes('admin')) {
+            isAuthorized = true;
+          }
+        }
+      } catch (authErr) {
+        console.warn('Login check failed:', authErr);
+      }
+
+      // 2. Direct admin password matching (Fuat Çetin: 22, Aykut Öz: 8, or admin)
+      if (!isAuthorized) {
+        if (trimmed === '22' || trimmed === '8' || trimmed.toLowerCase() === 'admin') {
+          isAuthorized = true;
+        }
+      }
+
+      if (!isAuthorized) {
+        setClearPasswordError('Hatalı şifre! Sadece yetkili Admin şifresi ile tüm eski bakımlar silinebilir.');
+        setClearRecordsLoading(false);
+        return;
+      }
+
+      // 3. Perform records clearing
+      const res = await cmmsApi.clearAllMaintenanceRecords();
+      setClearSuccessMessage(res.message || 'Tüm eski yapılan bakım kayıtları başarıyla silindi.');
+
+      if (onRecordsCleared) {
+        onRecordsCleared();
+      }
+
+      setTimeout(() => {
+        setClearRecordsModalOpen(false);
+        setClearSuccessMessage(null);
+        setClearPassword('');
+      }, 1400);
+    } catch (err: any) {
+      setClearPasswordError(err.message || 'Kayıtları silme işlemi sırasında bir hata oluştu.');
+    } finally {
+      setClearRecordsLoading(false);
+    }
+  };
 
   // Machine Searchable Combobox State
   const [machineSearchQuery, setMachineSearchQuery] = useState('');
@@ -551,6 +626,26 @@ export const AdminView: React.FC<AdminViewProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setClearRecordsModalOpen(true);
+                setClearPassword('');
+                setClearPasswordError('');
+                setClearSuccessMessage(null);
+              }}
+              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-black shadow-md shadow-rose-600/25 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 border border-rose-500/80"
+              title="Tüm eski yapılan bakım kayıtlarını şifre ile güvenli şekilde sil"
+            >
+              <Trash2 className="w-4 h-4 text-white" />
+              <span>Eski Yapılan Bakımları Sil</span>
+              {records && records.length > 0 && (
+                <span className="px-1.5 py-0.5 bg-black/40 text-rose-200 text-[10px] rounded-full font-mono">
+                  {records.length}
+                </span>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={() => setScriptModalOpen(true)}
@@ -1885,6 +1980,155 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ESKİ BAKIMLARI SİLME ŞİFRE ONAY MODALI ("admin tüm eski yapılan bakımları silsin ama sil dedğinde şifre istesin şifresini girince silsin") */}
+      {clearRecordsModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+        >
+          <div
+            className="bg-[#141d2e] border-2 border-rose-500/70 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl shadow-rose-950/50 relative overflow-hidden flex flex-col gap-4 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Ambient Background Glow */}
+            <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-48 bg-rose-500/20 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Top Close button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!clearRecordsLoading) {
+                  setClearRecordsModalOpen(false);
+                  setClearPassword('');
+                  setClearPasswordError('');
+                }
+              }}
+              disabled={clearRecordsLoading}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+              title="Kapat"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header Icon */}
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border-2 border-rose-500 text-rose-400 flex items-center justify-center mx-auto shadow-lg relative z-10">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+
+            {/* Title & Description */}
+            <div className="text-center space-y-1 relative z-10">
+              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Eski Yapılan Bakımları Sil
+              </h3>
+              <p className="text-xs text-slate-300 font-medium">
+                Sistemdeki tüm tamamlanmış bakım kontrollerini sıfırlama işlemi
+              </p>
+            </div>
+
+            {/* Warning Callout Box */}
+            <div className="bg-rose-950/50 border border-rose-500/40 rounded-2xl p-3.5 text-xs text-rose-200 space-y-1.5 relative z-10">
+              <div className="flex items-center gap-2 font-bold text-rose-400">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>UYARI: Bu işlem geri alınamaz!</span>
+              </div>
+              <p className="text-slate-300 leading-relaxed text-[11px] sm:text-xs">
+                Sistemdeki toplam <b className="text-rose-300 font-bold">{records?.length || 0} adet</b> yapılmış bakım kontrol kaydı kalıcı olarak silinecek, sayaçlar ve makineler sıfırlanacaktır.
+              </p>
+            </div>
+
+            {/* Password Input Form */}
+            <form onSubmit={handleConfirmClearRecords} className="space-y-4 relative z-10">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-yellow-400" />
+                    <span>Yönetici (Admin) Şifresi *</span>
+                  </span>
+                </label>
+
+                <div className="relative">
+                  <input
+                    type={showClearPassword ? 'text' : 'password'}
+                    value={clearPassword}
+                    onChange={(e) => {
+                      setClearPassword(e.target.value);
+                      if (clearPasswordError) setClearPasswordError('');
+                    }}
+                    placeholder="Admin şifrenizi giriniz..."
+                    autoFocus
+                    disabled={clearRecordsLoading}
+                    className="w-full bg-[#1b263b] border border-slate-700 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 rounded-xl px-3.5 py-3 text-sm text-white placeholder:text-slate-500 font-mono pr-10 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowClearPassword(!showClearPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 cursor-pointer"
+                    title={showClearPassword ? 'Şifreyi Gizle' : 'Şifreyi Göster'}
+                  >
+                    {showClearPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {clearPasswordError && (
+                <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-600 text-xs text-rose-200 font-bold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{clearPasswordError}</span>
+                </div>
+              )}
+
+              {/* Success Message */}
+              {clearSuccessMessage && (
+                <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500 text-xs text-emerald-200 font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{clearSuccessMessage}</span>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClearRecordsModalOpen(false);
+                    setClearPassword('');
+                    setClearPasswordError('');
+                  }}
+                  disabled={clearRecordsLoading}
+                  className="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Vazgeç
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={clearRecordsLoading || !clearPassword.trim()}
+                  className={`flex-1 py-3 px-4 rounded-xl font-black text-xs shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
+                    clearRecordsLoading || !clearPassword.trim()
+                      ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                      : 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30 ring-2 ring-rose-500/50'
+                  }`}
+                >
+                  {clearRecordsLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Siliniyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 text-white" />
+                      <span>Şifreyi Onayla ve Sil</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

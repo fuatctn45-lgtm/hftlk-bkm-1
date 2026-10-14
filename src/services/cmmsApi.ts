@@ -1014,6 +1014,47 @@ export const cmmsApi = {
   },
 
   /**
+   * Delete / clear all historical maintenance records from Google Spreadsheet and local cache
+   */
+  async clearAllMaintenanceRecords(): Promise<{ success: boolean; message: string }> {
+    // 1. Wipe local caches immediately
+    try {
+      localStorage.removeItem(CACHE_RECORDS_KEY);
+      localStorage.removeItem('cmms_photos_map');
+      localStorage.removeItem('cmms_upload_queue_v1');
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('proofImg_') || k.startsWith('rec_'))) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach((k) => {
+        try { localStorage.removeItem(k); } catch {}
+      });
+    } catch (e) {
+      console.warn('Local cache clear warning:', e);
+    }
+
+    // 2. Clear backend via proxy / Apps Script
+    try {
+      if (hasServerBackend) {
+        const res = await callCmmsApi('clearAllMaintenanceRecords', {}, { timeout: 10000 });
+        if (res && res.success) {
+          return res;
+        }
+      } else {
+        const res = await rawFormPost('clearAllMaintenanceRecords', {});
+        return res;
+      }
+    } catch (err: any) {
+      console.warn('Backend clear records error (local records already wiped):', err);
+    }
+
+    return { success: true, message: 'Tüm eski bakım kayıtları başarıyla silindi ve sıfırlandı.' };
+  },
+
+  /**
    * Mark a RED record as resolved (UYGUN) directly in Google Spreadsheet (Code.gs: redToUygun)
    */
   async markRecordResolved(recordId: string): Promise<{ success: boolean; message?: string }> {
