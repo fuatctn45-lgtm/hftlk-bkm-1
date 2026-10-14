@@ -12,6 +12,8 @@ import {
   X,
   Check,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   QrCode,
   Factory,
   Layers,
@@ -62,6 +64,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed' | 'red'>('all');
   const [selectedGroup, setSelectedGroup] = useState<'all' | '01-350522-Bakim ve Onarim & Üretim' | 'Üretim'>('all');
+
+  // Accordion state: clicking a card opens its machine list
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (key: string) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
 
   useEffect(() => {
     return uploadQueueService.subscribe(setUploadQueue);
@@ -580,168 +592,127 @@ export const HomeView: React.FC<HomeViewProps> = ({
         ) : (
           <div className="space-y-6">
             {groupedMachineRows.map((group) => {
-              const groupRate = group.totalPlanned > 0
-                ? Math.round((group.completed / group.totalPlanned) * 100)
-                : 0;
+              const isExpanded = !!expandedGroups[group.key] || searchQuery.trim().length > 0;
 
               return (
-                /* TEK BİR ANA KART: Grup başlığı ve içindeki tüm makineler bu tek kartın içinde */
+                /* TEK BİR ANA KART: Karta tıklandığında liste açılır/kapanır (ayrıcı çizgi yok) */
                 <div
                   key={group.key}
-                  className="rounded-2xl bg-[#0c1421] border border-slate-700/80 p-3 sm:p-4 shadow-lg space-y-3"
+                  className="rounded-2xl bg-[#0c1421] border border-slate-700/80 shadow-lg overflow-hidden transition-all duration-200"
                 >
-                  {/* Grup Başlık Alanı (Ayırıcı çizgi yok) */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 flex items-center justify-center shrink-0">
+                  {/* Grup Kartı Başlığı (Karta tıklanınca liste açılır) */}
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.key)}
+                    className="w-full flex items-center justify-between p-3.5 sm:p-4 text-left hover:bg-[#101929] transition-colors cursor-pointer select-none group/btn"
+                  >
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 flex items-center justify-center shrink-0">
                         {group.iconType === 'wrench' ? (
                           <Wrench className="w-4 h-4 text-yellow-400" />
                         ) : (
                           <Factory className="w-4 h-4 text-cyan-300" />
                         )}
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wide">
+                          <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wide group-hover/btn:text-yellow-300 transition-colors">
                             {group.title}
                           </h4>
-                          <span className="px-2 py-0.5 rounded-full bg-slate-800 text-yellow-300 text-[10px] font-mono font-bold border border-slate-700">
+                          <span className="px-2 py-0.5 rounded-full bg-slate-800 text-yellow-300 text-[10px] font-mono font-bold border border-slate-700 shrink-0">
                             {group.items.length} Makine
                           </span>
                         </div>
                         {group.subtitle && (
-                          <p className="text-[10px] sm:text-[11px] text-slate-400">
+                          <p className="text-[10px] sm:text-[11px] text-slate-400 truncate mt-0.5">
                             {group.subtitle}
                           </p>
                         )}
                       </div>
                     </div>
 
-                    {/* Grup İlerleme Bilgisi */}
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                      <span className="text-[11px] font-mono text-slate-300">
-                        <span className="text-emerald-400 font-bold">{group.completed}</span>
-                        <span className="text-slate-500"> / </span>
-                        <span>{group.totalPlanned} Kontrol</span>
+                    {/* Açma / Kapama Göstergesi */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[11px] text-slate-400 hidden sm:inline-block font-medium">
+                        {isExpanded ? 'Listeyi Gizle' : 'Makineleri Göster'}
                       </span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-mono font-black border ${
-                        groupRate === 100
-                          ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/50'
-                          : 'bg-yellow-950/60 text-yellow-300 border-yellow-500/50'
-                      }`}>
-                        %{groupRate}
-                      </span>
+                      <div className="w-7 h-7 rounded-lg bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-400 group-hover/btn:text-yellow-400 group-hover/btn:border-yellow-400/50 transition-all">
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4 text-yellow-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-slate-300" />
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </button>
 
-                  {/* Bu Kartın İçindeki Makineler (Ayırıcı çizgi olmadan doğrudan kartın içinde) */}
-                  <div className="space-y-2">
-                    {group.items.map((item) => {
-                      const m = item.machine;
-                      const machineId = m.id || m.machineName;
+                  {/* Karta Tıklandığında Açılan Sade Makine Listesi (Sayı ve QR kaldırıldı) */}
+                  {isExpanded && (
+                    <div className="p-3 sm:p-4 pt-1 space-y-2">
+                      {group.items.map((item) => {
+                        const m = item.machine;
+                        const machineId = m.id || m.machineName;
 
-                      return (
-                        <div
-                          key={machineId}
-                          onClick={() => handleOpenMaintenance(m)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              handleOpenMaintenance(m);
-                            }
-                          }}
-                          className={`group relative rounded-xl border transition-all duration-150 cursor-pointer p-3 sm:p-3.5 select-none ${
-                            item.hasRed
-                              ? 'bg-[#151a27] border-rose-600/70 hover:border-rose-400 hover:bg-[#1a2030]'
-                              : item.isCompleted
-                              ? 'bg-[#111a28] border-emerald-500/40 hover:border-emerald-400 hover:bg-[#142032]'
-                              : 'bg-[#111a28] border-slate-800/90 hover:border-yellow-400/80 hover:bg-[#162337]'
-                          } shadow-sm hover:shadow-md active:scale-[0.995] space-y-2`}
-                        >
-                          {/* 1. SATIR (ÜST): Makine Adı (İnce ve Küçük Yazı) + (Varsa RED Uyarısı) + Sayı Özeti + QR İkonu */}
-                          <div className="flex items-center justify-between gap-2.5">
-                            {/* Sol: Makine Adı (Grup ismi kaldırıldı, font küçültüldü ve ince yazı yapıldı) */}
-                            <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap min-w-0">
-                              <span className="text-yellow-300 font-light text-xs sm:text-sm tracking-wide group-hover:text-yellow-200 transition-colors">
+                        return (
+                          <div
+                            key={machineId}
+                            onClick={() => handleOpenMaintenance(m)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleOpenMaintenance(m);
+                              }
+                            }}
+                            className={`group flex items-center justify-between p-3 sm:p-3.5 rounded-xl border transition-all duration-150 cursor-pointer select-none ${
+                              item.hasRed
+                                ? 'bg-[#151a27] border-rose-600/70 hover:border-rose-400 hover:bg-[#1a2030]'
+                                : item.isCompleted
+                                ? 'bg-[#111a28] border-emerald-500/40 hover:border-emerald-400 hover:bg-[#142032]'
+                                : 'bg-[#111a28] border-slate-800/90 hover:border-yellow-400/80 hover:bg-[#162337]'
+                            } shadow-xs hover:shadow-md active:scale-[0.995]`}
+                          >
+                            {/* Sol: Sade Makine Adı (İnce yazı) ve Küçük Durum Noktası */}
+                            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                              <span
+                                className={`w-2 h-2 rounded-full shrink-0 ${
+                                  item.hasRed
+                                    ? 'bg-rose-500 ring-2 ring-rose-500/30'
+                                    : item.isCompleted
+                                    ? 'bg-emerald-400 ring-2 ring-emerald-400/30'
+                                    : 'bg-yellow-400/70'
+                                }`}
+                              />
+                              <span className="text-yellow-300 font-light text-xs sm:text-sm tracking-wide group-hover:text-yellow-200 transition-colors truncate">
                                 {m.machineName}
                               </span>
+                            </div>
 
-                              {/* RED Uyarısı Varsa */}
-                              {item.hasRed && (
-                                <span className="px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1 animate-pulse shrink-0">
-                                  <AlertTriangle className="w-3 h-3 text-white" />
-                                  <span>{item.redCount} RED</span>
+                            {/* Sağ: Sade Durum Etiketi ve İnce Ok (Sayılar ve QR ikonu kaldırıldı) */}
+                            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                              {item.hasRed ? (
+                                <span className="px-2 py-0.5 rounded-md bg-rose-600/20 text-rose-300 text-[10px] font-bold border border-rose-500/40 uppercase tracking-wider flex items-center gap-1">
+                                  <AlertTriangle className="w-3 h-3 text-rose-400" />
+                                  Arıza
+                                </span>
+                              ) : item.isCompleted ? (
+                                <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/40 flex items-center gap-1">
+                                  <Check className="w-3 h-3 text-emerald-400" />
+                                  Tamamlandı
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-400 text-[10px] font-medium border border-slate-700/60">
+                                  Bekliyor
                                 </span>
                               )}
-                            </div>
-
-                            {/* Sağ: Yapılan / Toplam Sayısı Rozeti & QR İkonu */}
-                            <div className="flex items-center gap-2 shrink-0">
-                              <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#080d16] border border-slate-700/80 text-[11px] sm:text-xs font-mono font-black shrink-0">
-                                <span className={item.completedTasks === item.totalTasks ? 'text-emerald-400' : 'text-yellow-400'}>
-                                  {item.completedTasks}
-                                </span>
-                                <span className="text-slate-500">/</span>
-                                <span className="text-slate-300">{item.totalTasks}</span>
-                              </div>
-
-                              {/* QR Kod İkonu & Yönlendirme Oku */}
-                              <div className="flex items-center text-slate-500 group-hover:text-yellow-400 transition-colors">
-                                <QrCode className="w-4 h-4 mr-0.5 opacity-60 group-hover:opacity-100 transition-opacity" />
-                                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-yellow-400 group-hover:translate-x-0.5 transition-all" />
                             </div>
                           </div>
-
-                          {/* 2. SATIR (ALT): Rakamlar Altta - Madde Rozetleri (1, 2, 3...) */}
-                          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pt-0.5">
-                            {item.tasksWithStatus.map(({ status }, idx) => {
-                              const taskNumber = idx + 1;
-                              const isDone = status === 'tamamlanan';
-                              const isRed = status === 'red';
-
-                              if (isDone) {
-                                return (
-                                  <div
-                                    key={idx}
-                                    title={`Madde ${taskNumber}: Yapıldı (UYGUN)`}
-                                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0"
-                                  >
-                                    {taskNumber}
-                                  </div>
-                                );
-                              }
-
-                              if (isRed) {
-                                return (
-                                  <div
-                                    key={idx}
-                                    title={`Madde ${taskNumber}: RED Arıza Kaydı!`}
-                                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0 animate-pulse"
-                                  >
-                                    {taskNumber}
-                                  </div>
-                                );
-                              }
-
-                              // Bekleyen Madde: Koyu arka plan, sarı kenarlık ve sarı numara
-                              return (
-                                <div
-                                  key={idx}
-                                  title={`Madde ${taskNumber}: Bekliyor`}
-                                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#0a101b] border-2 border-yellow-400/80 text-yellow-300 font-black text-xs flex items-center justify-center shrink-0 shadow-xs group-hover:border-yellow-300"
-                                >
-                                  {taskNumber}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
