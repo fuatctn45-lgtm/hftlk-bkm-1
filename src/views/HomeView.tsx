@@ -360,9 +360,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl pointer-events-none" />
       </div>
 
-      {/* KPI Stats Summary Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4">
-        {/* Planlanan */}
+      {/* KPI Stats Summary Bar: 2 Satır (Rakamlar Altta) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+        {/* Satır 1 / 1: Planlanan */}
         <div className="bg-[#1b263b] p-3 sm:p-4 rounded-2xl border border-slate-700/70 shadow-md">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Planlanan</span>
@@ -372,18 +372,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div className="text-[11px] text-slate-400 font-medium mt-0.5">{machineListWithStats.length} Makine</div>
         </div>
 
-        {/* Tamamlanan */}
-        <div className="bg-[#1b263b] p-3 sm:p-4 rounded-2xl border border-slate-700/70 shadow-md">
+        {/* Satır 1 / 2: Tamamlanan (YEŞİL #00c853) */}
+        <div className="bg-[#1b263b] p-3 sm:p-4 rounded-2xl border border-[#00c853]/40 shadow-md">
           <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-400">Tamamlanan</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#00c853]">Tamamlanan</span>
+            <CheckCircle2 className="w-4 h-4 text-[#00c853]" />
           </div>
-          <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono">{completed}</div>
+          <div className="text-xl sm:text-2xl font-black text-[#00c853] font-mono">{completed}</div>
           <div className="text-[11px] text-slate-400 font-medium mt-0.5">Bu hafta yapılan</div>
         </div>
 
-        {/* Bekleyen */}
-        <div className="bg-[#1b263b] p-3 sm:p-4 rounded-2xl border border-slate-700/70 shadow-md">
+        {/* Satır 1 / 3: Bekleyen */}
+        <div className="bg-[#1b263b] p-3 sm:p-4 rounded-2xl border border-slate-700/70 shadow-md col-span-2 sm:col-span-1">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-amber-400">Bekleyen</span>
             <Clock className="w-4 h-4 text-amber-400" />
@@ -392,17 +392,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div className="text-[11px] text-slate-400 font-medium mt-0.5">Kalan kontrol</div>
         </div>
 
-        {/* UYGUN */}
+        {/* Satır 2 / 1: UYGUN */}
         <div className="bg-[#1b263b] p-3 sm:p-4 rounded-2xl border border-slate-700/70 shadow-md">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-300">UYGUN</span>
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#00c853] inline-block shadow-[0_0_8px_rgba(0,200,83,0.6)]" />
           </div>
-          <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono">{uygunCount}</div>
+          <div className="text-xl sm:text-2xl font-black text-[#00c853] font-mono">{uygunCount}</div>
           <div className="text-[11px] text-slate-400 font-medium mt-0.5">Sorunsuz kayıt</div>
         </div>
 
-        {/* RED Arıza */}
+        {/* Satır 2 / 2: RED Arıza */}
         <div
           onClick={() => redCount > 0 && onNavigate('redList')}
           className={`p-3 sm:p-4 rounded-2xl border shadow-md transition-all ${
@@ -421,8 +421,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
 
-        {/* İlerleme % */}
-        <div className="bg-[#1b263b] p-3 sm:p-4 rounded-2xl border border-slate-700/70 shadow-md">
+        {/* Satır 2 / 3: İlerleme % */}
+        <div className="bg-[#1b263b] p-3 sm:p-4 rounded-2xl border border-slate-700/70 shadow-md col-span-2 sm:col-span-1">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-yellow-400">İlerleme</span>
             <TrendingUp className="w-4 h-4 text-yellow-400" />
@@ -431,7 +431,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div className="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                completionRate >= 90 ? 'bg-emerald-400' : completionRate >= 50 ? 'bg-yellow-400' : 'bg-rose-500'
+                completionRate >= 90 ? 'bg-[#00c853]' : completionRate >= 50 ? 'bg-yellow-400' : 'bg-rose-500'
               }`}
               style={{ width: `${Math.min(100, completionRate)}%` }}
             />
@@ -441,8 +441,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       {/* SADE SATIR LİSTESİ: Butonsuz, doğrudan tıklanabilir makine satırları */}
       <div className="bg-[#121a29] rounded-2xl sm:rounded-3xl border border-slate-700/80 p-3 sm:p-5 shadow-xl space-y-4">
-        {/* Başlık & Grup / Durum Filtreleri */}
-        <div className="space-y-3 pb-3 border-b border-slate-800">
+        {/* Başlık & Grup / Durum Filtreleri (Ayrıcı çizgisiz) */}
+        <div className="space-y-3 pb-1">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block shadow-xs" />
@@ -580,7 +580,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           )}
         </div>
 
-        {/* GRUPLANDIRILMIŞ MAKİNE LİSTESİ: 2 Satırlı Kartlar (Rakamlar Altta) */}
+        {/* GRUPLANDIRILMIŞ MAKİNE LİSTESİ */}
         {groupedMachineRows.length === 0 ? (
           <div className="text-center py-10 bg-[#0d1421] rounded-2xl border border-dashed border-slate-700 p-6 space-y-2">
             <Wrench className="w-8 h-8 text-slate-500 mx-auto" />
@@ -590,7 +590,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {groupedMachineRows.map((group) => {
               const isExpanded = !!expandedGroups[group.key] || searchQuery.trim().length > 0;
 
@@ -631,11 +631,25 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Açma / Kapama Göstergesi */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[11px] text-slate-400 hidden sm:inline-block font-medium">
-                        {isExpanded ? 'Listeyi Gizle' : 'Makineleri Göster'}
-                      </span>
+                    {/* Açma / Kapama ve Grup Göstergesi */}
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        {/* Grup Göstergesi (İlerleme Çubuğu) */}
+                        <div className="w-14 sm:w-20 h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-700/80 hidden xs:block">
+                          <div
+                            className="h-full bg-[#00c853] rounded-full transition-all duration-300"
+                            style={{
+                              width: `${group.totalPlanned > 0 ? (group.completed / group.totalPlanned) * 100 : 0}%`,
+                            }}
+                          />
+                        </div>
+                        {/* Yapılan Bakım Rakamı YEŞİL #00c853 */}
+                        <div className="flex items-baseline gap-0.5 px-2 py-0.5 rounded-md bg-slate-800/90 border border-slate-700/80 text-xs font-mono">
+                          <span className="text-[#00c853] font-bold">{group.completed}</span>
+                          <span className="text-slate-400 text-[11px]">/{group.totalPlanned}</span>
+                        </div>
+                      </div>
+
                       <div className="w-7 h-7 rounded-lg bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-400 group-hover/btn:text-yellow-400 group-hover/btn:border-yellow-400/50 transition-all">
                         {isExpanded ? (
                           <ChevronUp className="w-4 h-4 text-yellow-400" />
@@ -646,12 +660,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     </div>
                   </button>
 
-                  {/* Karta Tıklandığında Açılan Sade Makine Listesi (Sayı ve QR kaldırıldı) */}
+                  {/* Karta Tıklandığında Açılan Makine Listesi: Görseldeki Gibi Satırlar (Satır Şekli Korundu, Ayrıcı Çizgi Yok) */}
                   {isExpanded && (
-                    <div className="p-3 sm:p-4 pt-1 space-y-2">
+                    <div className="p-3 sm:p-4 pt-1 space-y-2.5">
                       {group.items.map((item) => {
                         const m = item.machine;
                         const machineId = m.id || m.machineName;
+                        const percent = item.totalTasks > 0 ? Math.round((item.completedTasks / item.totalTasks) * 100) : 0;
 
                         return (
                           <div
@@ -665,48 +680,98 @@ export const HomeView: React.FC<HomeViewProps> = ({
                                 handleOpenMaintenance(m);
                               }
                             }}
-                            className={`group flex items-center justify-between p-3 sm:p-3.5 rounded-xl border transition-all duration-150 cursor-pointer select-none ${
+                            className={`group w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-150 cursor-pointer select-none active:scale-[0.99] border ${
                               item.hasRed
-                                ? 'bg-[#151a27] border-rose-600/70 hover:border-rose-400 hover:bg-[#1a2030]'
+                                ? 'bg-[#181119] border-rose-600/70 hover:border-rose-400 hover:bg-[#201421]'
                                 : item.isCompleted
-                                ? 'bg-[#111a28] border-emerald-500/40 hover:border-emerald-400 hover:bg-[#142032]'
-                                : 'bg-[#111a28] border-slate-800/90 hover:border-yellow-400/80 hover:bg-[#162337]'
-                            } shadow-xs hover:shadow-md active:scale-[0.995]`}
+                                ? 'bg-[#0e1724] border-[#00c853]/40 hover:border-[#00c853] hover:bg-[#121e30]'
+                                : 'bg-[#0e1624] border-slate-700/80 hover:border-yellow-400/80 hover:bg-[#131f33]'
+                            } shadow-xs hover:shadow-lg`}
                           >
-                            {/* Sol: Sade Makine Adı (İnce yazı) ve Küçük Durum Noktası */}
-                            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                              <span
-                                className={`w-2 h-2 rounded-full shrink-0 ${
-                                  item.hasRed
-                                    ? 'bg-rose-500 ring-2 ring-rose-500/30'
-                                    : item.isCompleted
-                                    ? 'bg-emerald-400 ring-2 ring-emerald-400/30'
-                                    : 'bg-yellow-400/70'
-                                }`}
-                              />
-                              <span className="text-yellow-300 font-light text-xs sm:text-sm tracking-wide group-hover:text-yellow-200 transition-colors truncate">
-                                {m.machineName}
-                              </span>
+                            {/* Üst Kısım: Makine Adı (Sarı) + Sağda Yeşil Rakamlar & Gösterge (Buton/QR yok, tek parça tıkla) */}
+                            <div className="flex items-center justify-between gap-3">
+                              {/* Makine Adı: Görseldeki gibi sarı, belirgin ve ince/zarif ("ALÜ TEST-1" stili, yanında grup adı yok) */}
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-yellow-400 font-bold text-sm sm:text-base tracking-wide group-hover:text-yellow-300 transition-colors truncate">
+                                  {m.machineName}
+                                </span>
+                              </div>
+
+                              {/* Sağ Kısım: Yapılan Bakımlar Rakamları YEŞİL + Gösterge (Bekliyor kaldırıldı) */}
+                              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                                {item.hasRed && (
+                                  <span className="px-2 py-0.5 rounded-md bg-rose-600/25 text-rose-300 text-[10px] sm:text-xs font-black border border-rose-500/50 uppercase tracking-wider flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3 text-rose-400" />
+                                    ARIZA
+                                  </span>
+                                )}
+
+                                {/* Yeşil Gösterge Çubuğu */}
+                                <div className="w-16 sm:w-24 h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-700/70 hidden xs:block">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-300 ${
+                                      item.hasRed
+                                        ? 'bg-rose-500'
+                                        : item.isCompleted
+                                        ? 'bg-[#00c853] shadow-[0_0_8px_rgba(0,200,83,0.6)]'
+                                        : 'bg-[#00c853]'
+                                    }`}
+                                    style={{ width: `${percent}%` }}
+                                  />
+                                </div>
+
+                                {/* Yapılan Bakım Rakamı: YEŞİL (#00c853) */}
+                                <div className="flex items-baseline gap-0.5 bg-slate-900/95 px-2.5 py-1 rounded-lg border border-slate-700/80 font-mono">
+                                  <span className="text-[#00c853] font-black text-xs sm:text-sm">
+                                    {item.completedTasks}
+                                  </span>
+                                  <span className="text-slate-400 text-xs">
+                                    /{item.totalTasks}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
 
-                            {/* Sağ: Sade Durum Etiketi ve İnce Ok (Sayılar ve QR ikonu kaldırıldı) */}
-                            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-                              {item.hasRed ? (
-                                <span className="px-2 py-0.5 rounded-md bg-rose-600/20 text-rose-300 text-[10px] font-bold border border-rose-500/40 uppercase tracking-wider flex items-center gap-1">
-                                  <AlertTriangle className="w-3 h-3 text-rose-400" />
-                                  Arıza
-                                </span>
-                              ) : item.isCompleted ? (
-                                <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/40 flex items-center gap-1">
-                                  <Check className="w-3 h-3 text-emerald-400" />
-                                  Tamamlandı
-                                </span>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-400 text-[10px] font-medium border border-slate-700/60">
-                                  Bekliyor
-                                </span>
+                            {/* Alt Kısım: Görseldeki gibi Adım / Durum Rozetleri Satırı (Yeşil OK ve Kırmızı RED) */}
+                            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2.5 pt-0.5">
+                              {item.tasksWithStatus.map((t, idx) => {
+                                if (t.status === 'tamamlanan') {
+                                  return (
+                                    <span
+                                      key={idx}
+                                      title={`${idx + 1}. ${t.task.task || 'Bakım'} (Tamamlandı)`}
+                                      className="h-6 sm:h-7 px-2.5 rounded-md bg-[#00c853] text-black font-black text-[11px] sm:text-xs flex items-center gap-1 shadow-xs"
+                                    >
+                                      <Check className="w-3 h-3 stroke-[3]" />
+                                      <span>OK</span>
+                                    </span>
+                                  );
+                                }
+                                if (t.status === 'red') {
+                                  return (
+                                    <span
+                                      key={idx}
+                                      title={`${idx + 1}. ${t.task.task || 'Bakım'} (Arıza / RED)`}
+                                      className="h-6 sm:h-7 px-2.5 rounded-md bg-[#ef4444] text-white font-black text-[11px] sm:text-xs flex items-center gap-1 shadow-xs animate-pulse"
+                                    >
+                                      <span>RED</span>
+                                    </span>
+                                  );
+                                }
+                                // Bekleyen: "Bekliyor" yazısı YOK, sade adım numarası rozeti
+                                return (
+                                  <span
+                                    key={idx}
+                                    title={`${idx + 1}. ${t.task.task || 'Bakım'}`}
+                                    className="min-w-[26px] h-6 sm:h-7 px-1.5 rounded-md bg-slate-800/90 text-slate-400 border border-slate-700/70 font-bold text-[11px] sm:text-xs flex items-center justify-center"
+                                  >
+                                    {idx + 1}
+                                  </span>
+                                );
+                              })}
+                              {item.tasksWithStatus.length === 0 && (
+                                <span className="text-xs text-slate-500 italic">Tanımlı bakım maddesi yok</span>
                               )}
-                              <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-yellow-400 group-hover:translate-x-0.5 transition-all" />
                             </div>
                           </div>
                         );
