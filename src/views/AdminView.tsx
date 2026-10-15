@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { MaintenanceTemplate, Machine, MaintenanceRecord, DEPARTMENTS, DepartmentConfig } from '../types/cmms';
-import { cmmsApi } from '../services/cmmsApi';
+import { cmmsApi, DEFAULT_VERI_SYSTEMS } from '../services/cmmsApi';
 import { extractDriveFileId } from './RedListView';
 import { CODE_GS_SOURCE } from '../constants/codeGsSource';
 import {
@@ -29,6 +29,7 @@ import {
   Eye,
   CheckCircle2,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 interface AdminViewProps {
@@ -177,6 +178,66 @@ export const AdminView: React.FC<AdminViewProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [machineDropdownOpen]);
+
+  // Live Column G ("SİSTEMLER") list from "veri" sheet ("Bölge (Ünite / Bölüm) G SÜTÜNUNDAKİ BİLGİLERİ LİSTELESİN LİSTEYİ ARDA GÜNCELLİCEM CANLI OLSUN")
+  const [liveSystems, setLiveSystems] = useState<string[]>(() => {
+    try {
+      const cached = localStorage.getItem('cmms_live_veri_column_g');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_VERI_SYSTEMS;
+  });
+  const [liveSystemsLoading, setLiveSystemsLoading] = useState(false);
+  const [regionDropdownOpen, setRegionDropdownOpen] = useState(false);
+  const [editRegionDropdownOpen, setEditRegionDropdownOpen] = useState(false);
+  const regionDropdownRef = useRef<HTMLDivElement | null>(null);
+  const editRegionDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Load live Column G systems on mount
+  useEffect(() => {
+    cmmsApi.getLiveRegionsFromVeriSheet().then((items) => {
+      if (items && items.length > 0) {
+        setLiveSystems(items);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const refreshLiveSystems = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setLiveSystemsLoading(true);
+    try {
+      const items = await cmmsApi.getLiveRegionsFromVeriSheet(true);
+      if (items && items.length > 0) {
+        setLiveSystems(items);
+      }
+    } finally {
+      setLiveSystemsLoading(false);
+    }
+  };
+
+  // Filtered live systems based on current region text input
+  const filteredLiveSystems = useMemo(() => {
+    if (!region) return liveSystems;
+    const q = region.toLowerCase().trim();
+    return liveSystems.filter((item) => item.toLowerCase().includes(q));
+  }, [liveSystems, region]);
+
+  // Close region comboboxes on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (regionDropdownRef.current && !regionDropdownRef.current.contains(e.target as Node)) {
+        setRegionDropdownOpen(false);
+      }
+      if (editRegionDropdownRef.current && !editRegionDropdownRef.current.contains(e.target as Node)) {
+        setEditRegionDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Selected Machine Object
   const selectedMachine = useMemo(() => {
@@ -819,18 +880,144 @@ export const AdminView: React.FC<AdminViewProps> = ({
               </div>
             </div>
 
-            {/* 3. Bölge (Ünite / Bölüm) */}
+            {/* 3. Bölge (Ünite / Bölüm) - E-Tablo "veri" Sekmesi G Sütunundan Canlı Liste */}
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
-                Bölge (Ünite / Bölüm)
-              </label>
-              <input
-                type="text"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                placeholder="Örn: Besleme Ünitesi, Fırın Girişi"
-                className="w-full px-3.5 py-2.5 bg-[#141d2d] border border-slate-700 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 text-white placeholder:text-slate-500 rounded-xl text-xs sm:text-sm font-medium"
-              />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-yellow-400" />
+                  <span>Bölge (Ünite / Bölüm)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={refreshLiveSystems}
+                  title="Google E-Tablo 'veri' sekmesi G sütunundan canlı güncelle"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-yellow-400 hover:text-yellow-300 bg-yellow-400/10 hover:bg-yellow-400/20 px-2 py-0.5 rounded-md border border-yellow-400/30 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className={`w-3 h-3 ${liveSystemsLoading ? 'animate-spin' : ''}`} />
+                  <span>Canlı E-Tablo ({liveSystems.length})</span>
+                </button>
+              </div>
+
+              <div className="relative" ref={regionDropdownRef}>
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    list="veri-column-g-systems-list"
+                    value={region}
+                    onChange={(e) => {
+                      setRegion(e.target.value);
+                      setRegionDropdownOpen(true);
+                    }}
+                    onFocus={() => setRegionDropdownOpen(true)}
+                    placeholder="G sütunundan seçin veya arayın (Örn: Hidrolik Sistem, Azot)..."
+                    className="w-full pl-3.5 pr-16 py-2.5 bg-[#141d2d] border border-slate-700 hover:border-yellow-400/70 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 text-white placeholder:text-slate-500 rounded-xl text-xs sm:text-sm font-medium transition-colors"
+                  />
+                  <div className="absolute right-2 flex items-center gap-1">
+                    {region && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRegion('');
+                        }}
+                        className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800"
+                        title="Temizle"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRegionDropdownOpen(!regionDropdownOpen);
+                      }}
+                      className="p-1 text-slate-400 hover:text-yellow-400 rounded hover:bg-slate-800 cursor-pointer"
+                      title="Listeyi Aç / Kapat"
+                    >
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform duration-200 ${
+                          regionDropdownOpen ? 'rotate-180 text-yellow-400' : ''
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Dropdown Options Popup */}
+                {regionDropdownOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#1b263b] border border-yellow-500/40 rounded-xl shadow-2xl z-40 max-h-72 overflow-y-auto p-1.5 space-y-0.5">
+                    <div className="px-2.5 py-1.5 text-[11px] font-bold text-slate-400 border-b border-slate-800 flex items-center justify-between">
+                      <span className="flex items-center gap-1 text-yellow-400">
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>E-Tablo G Sütunu (Sistemler)</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {filteredLiveSystems.length} / {liveSystems.length}
+                      </span>
+                    </div>
+
+                    {filteredLiveSystems.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-slate-400">
+                        "{region}" ile eşleşen sistem bulunamadı.
+                        <div className="text-[11px] text-yellow-400 font-bold mt-1">
+                          Yazdığınız değer doğrudan kaydedilecektir.
+                        </div>
+                      </div>
+                    ) : (
+                      filteredLiveSystems.map((item) => {
+                        const isHeader = /^\d+\.\s+/i.test(item);
+                        const isSelected = region.trim().toLowerCase() === item.trim().toLowerCase();
+
+                        if (isHeader) {
+                          return (
+                            <div
+                              key={item}
+                              onClick={() => {
+                                setRegion(item);
+                                setRegionDropdownOpen(false);
+                              }}
+                              className={`mt-1.5 first:mt-0 px-2.5 py-1.5 rounded-lg text-xs font-black tracking-wide cursor-pointer flex items-center justify-between transition-colors ${
+                                isSelected
+                                  ? 'bg-yellow-400 text-black'
+                                  : 'bg-[#141d2d] text-yellow-400 hover:bg-yellow-400/20 border-l-2 border-yellow-400'
+                              }`}
+                            >
+                              <span className="truncate">{item}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div
+                            key={item}
+                            onClick={() => {
+                              setRegion(item);
+                              setRegionDropdownOpen(false);
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer flex items-center justify-between transition-colors ${
+                              isSelected
+                                ? 'bg-yellow-400 text-black font-black'
+                                : 'text-slate-200 hover:bg-[#141d2d] hover:text-yellow-300'
+                            }`}
+                          >
+                            <span className="truncate pl-2">{item}</span>
+                            {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+
+                {/* Datalist for native mobile browser suggestion */}
+                <datalist id="veri-column-g-systems-list">
+                  {liveSystems.map((item) => (
+                    <option key={item} value={item} />
+                  ))}
+                </datalist>
+              </div>
             </div>
 
             {/* 4. Parça / Ekipman */}
@@ -1704,16 +1891,119 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wider">
-                      Bölge (Ünite)
-                    </label>
-                    <input
-                      type="text"
-                      value={region}
-                      onChange={(e) => setRegion(e.target.value)}
-                      placeholder="Örn: Besleme Ünitesi"
-                      className="w-full px-3 py-2 bg-[#1b263b] border border-slate-700 focus:border-yellow-400 text-white rounded-xl text-xs sm:text-sm font-medium"
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-yellow-400" />
+                        <span>Bölge (Ünite)</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={refreshLiveSystems}
+                        title="Google E-Tablo G sütunundan canlı güncelle"
+                        className="text-[10px] text-yellow-400 hover:text-yellow-300 font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${liveSystemsLoading ? 'animate-spin' : ''}`} />
+                        <span>Canlı ({liveSystems.length})</span>
+                      </button>
+                    </div>
+
+                    <div className="relative" ref={editRegionDropdownRef}>
+                      <div className="relative flex items-center">
+                        <input
+                          type="text"
+                          list="veri-column-g-systems-list"
+                          value={region}
+                          onChange={(e) => {
+                            setRegion(e.target.value);
+                            setEditRegionDropdownOpen(true);
+                          }}
+                          onFocus={() => setEditRegionDropdownOpen(true)}
+                          placeholder="G sütunundan seçin..."
+                          className="w-full pl-3 pr-14 py-2 bg-[#1b263b] border border-slate-700 hover:border-yellow-400/70 focus:border-yellow-400 text-white placeholder:text-slate-500 rounded-xl text-xs sm:text-sm font-medium transition-colors"
+                        />
+                        <div className="absolute right-1.5 flex items-center gap-0.5">
+                          {region && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRegion('');
+                              }}
+                              className="p-1 text-slate-400 hover:text-white rounded"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditRegionDropdownOpen(!editRegionDropdownOpen);
+                            }}
+                            className="p-1 text-slate-400 hover:text-yellow-400 rounded cursor-pointer"
+                          >
+                            <ChevronDown
+                              className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                                editRegionDropdownOpen ? 'rotate-180 text-yellow-400' : ''
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Dropdown Options Popup */}
+                      {editRegionDropdownOpen && (
+                        <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#141d2d] border border-yellow-500/40 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto p-1.5 space-y-0.5">
+                          <div className="px-2 py-1 text-[10px] font-bold text-slate-400 border-b border-slate-800 flex items-center justify-between">
+                            <span className="text-yellow-400">E-Tablo G Sütunu</span>
+                            <span>{filteredLiveSystems.length}</span>
+                          </div>
+
+                          {filteredLiveSystems.map((item) => {
+                            const isHeader = /^\d+\.\s+/i.test(item);
+                            const isSelected = region.trim().toLowerCase() === item.trim().toLowerCase();
+
+                            if (isHeader) {
+                              return (
+                                <div
+                                  key={item}
+                                  onClick={() => {
+                                    setRegion(item);
+                                    setEditRegionDropdownOpen(false);
+                                  }}
+                                  className={`mt-1 first:mt-0 px-2 py-1 rounded-md text-[11px] font-black tracking-wide cursor-pointer flex items-center justify-between ${
+                                    isSelected
+                                      ? 'bg-yellow-400 text-black'
+                                      : 'bg-[#1b263b] text-yellow-400 hover:bg-yellow-400/20 border-l-2 border-yellow-400'
+                                  }`}
+                                >
+                                  <span className="truncate">{item}</span>
+                                  {isSelected && <Check className="w-3 h-3 shrink-0" />}
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div
+                                key={item}
+                                onClick={() => {
+                                  setRegion(item);
+                                  setEditRegionDropdownOpen(false);
+                                }}
+                                className={`px-2.5 py-1.5 rounded-md text-xs font-semibold cursor-pointer flex items-center justify-between ${
+                                  isSelected
+                                    ? 'bg-yellow-400 text-black font-black'
+                                    : 'text-slate-200 hover:bg-[#1b263b] hover:text-yellow-300'
+                                }`}
+                              >
+                                <span className="truncate pl-1.5">{item}</span>
+                                {isSelected && <Check className="w-3 h-3 shrink-0" />}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div>

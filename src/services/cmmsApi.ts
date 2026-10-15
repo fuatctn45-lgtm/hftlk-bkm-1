@@ -59,6 +59,58 @@ export function normalizeWeekKey(rawVal?: any, createdAtVal?: any): string {
   return getWeekKey();
 }
 
+/**
+ * Default fallback list of Systems / Regions matching Google Sheet "veri" Column G
+ */
+export const DEFAULT_VERI_SYSTEMS: string[] = [
+  '1. MEKANİK VE AKIŞKAN SİSTEMLERİ',
+  'AZOT SİSTEMİ',
+  'Hidrolik Sistem',
+  'Pnömatik (Hava) Sistemi',
+  'Yağlama Sistemi',
+  'Şanzıman / Dişli Kutusu',
+  'Sızdırmazlık Elemanları',
+  'Basınçlı Kaplar ve Tanklar',
+  'VAKUM SİSTEMİ',
+  '2. ELEKTRİK, OTOMASYON VE ENERJİ',
+  'Elektrik ve Otomasyon',
+  'PANO SİSTEMİ',
+  'Trafo ve Yüksek Gerilim Hatları',
+  'Kesintisiz Güç Kaynağı (UPS) ve Akü Grubu',
+  'Topraklama ve Paratoner Kontrolü',
+  'Aydınlatma Sistemleri',
+  '3. HVAC, İKLİMLENDİRME VE HAVALANDIRMA',
+  'Klima ve İklimlendirme',
+  'Havalandırma ve Emiş',
+  'Egzost ve Gaz Atım',
+  'Hava Hızı ve Hava Akış Kontrolü',
+  '4. AKIŞKAN VE YAKIT TESİSATLARI',
+  'Soğutma ve Isıtma Suyu',
+  'Su Analizi ve Temiz Su Hatları',
+  'SAF SU ARITMA SİSTEMİ',
+  'Yakıt Besleme',
+  'Doğalgaz ve Gaz Kaçak Kontrolü',
+  '5. KESTİRİMCİ VE PERİYODİK BAKIM TİPLERİ',
+  'Ölçüm Veri Kaydı',
+  'Görsel Muayene (Gözle Genel Kontrol)',
+  'Görsel Seviye Kontrolü',
+  'Filtre Değişimi',
+  'Yüksüz Çalıştırma Testi',
+  'Titreşim Kontrolü ve Vibrasyon Analizi',
+  'Ses ve Gürültü Kontrolü',
+  'Termal Kamera ile Sıcaklık Muayenesi',
+  'Zorunlu Görsel Kaydı',
+  '6. EMNİYET, İŞ GÜVENLİĞİ VE LOJİSTİK',
+  'Emniyet ve Güvenlik',
+  'Yangın Söndürme ve Sprinkler Sistemi',
+  'Kaldırma ve Taşıma Ekipmanları (Vinç, Forklift)',
+  'Operatör Bilgilendirme ve İkaz Kaydı',
+  '7. ÇEVRE, ATIK VE SAHA DÜZENİ',
+  'Atık ve Sintine',
+  'Çevre, Ortam ve Hava Kalitesi Kontrolü',
+  '5S ve Saha Düzeni',
+];
+
 // Storage helpers
 export function getStoredUser(): UserSession | null {
   try {
@@ -1052,6 +1104,81 @@ export const cmmsApi = {
     }
 
     return { success: true, message: 'Tüm eski bakım kayıtları başarıyla silindi ve sıfırlandı.' };
+  },
+
+  /**
+   * Fetch live list of Systems / Regions from Column G ("SİSTEMLER") of the "veri" sheet
+   * Updates live when Google Spreadsheet is updated by user.
+   */
+  async getLiveRegionsFromVeriSheet(forceRefresh = false): Promise<string[]> {
+    const CACHE_KEY = 'cmms_live_veri_column_g';
+    if (!forceRefresh) {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Background revalidation
+            setTimeout(() => {
+              this.getLiveRegionsFromVeriSheet(true).catch(() => {});
+            }, 500);
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+
+    // 1. Direct GViz Reader from "veri" sheet (Column G is index 6)
+    try {
+      const data = await fetchGviz('veri', 5000);
+      if (data?.table?.rows && Array.isArray(data.table.rows)) {
+        const items: string[] = [];
+        data.table.rows.forEach((r: any) => {
+          const val = r.c && r.c[6] && r.c[6].v;
+          if (val) {
+            const str = String(val).trim();
+            if (
+              str &&
+              !items.includes(str) &&
+              str.toUpperCase() !== 'SİSTEMLER' &&
+              str.toUpperCase() !== 'SISTEMLER'
+            ) {
+              items.push(str);
+            }
+          }
+        });
+        if (items.length > 0) {
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(items));
+          } catch {}
+          return items;
+        }
+      }
+    } catch (e) {
+      console.warn('Direct GViz fetch for veri column G failed:', e);
+    }
+
+    // 2. Server proxy fallback if backend is active
+    if (hasServerBackend) {
+      try {
+        const res = await fetch(`/api/cmms/veri-systems${forceRefresh ? '?force=true' : ''}`, {
+          signal: safeTimeoutSignal(4000),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.systems) && json.systems.length > 0) {
+            try {
+              localStorage.setItem(CACHE_KEY, JSON.stringify(json.systems));
+            } catch {}
+            return json.systems;
+          }
+        }
+      } catch (err) {
+        console.warn('Server proxy fetch for veri systems failed:', err);
+      }
+    }
+
+    return DEFAULT_VERI_SYSTEMS;
   },
 
   /**

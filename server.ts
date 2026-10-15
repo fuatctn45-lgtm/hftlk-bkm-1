@@ -120,6 +120,56 @@ app.get('/api/cmms/sheet-recipients', async (req, res) => {
   }
 });
 
+/**
+ * Fetch live systems list directly from Google E-Tablo "veri" sheet (Column G)
+ */
+app.get('/api/cmms/veri-systems', async (req, res) => {
+  try {
+    const isForce = req.query.force === 'true';
+    const cacheKey = 'veri_systems_column_g';
+    if (!isForce) {
+      const cached = getSheetCache(cacheKey);
+      if (cached) return res.json(cached);
+    }
+
+    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SPREADSHEET_ID}/gviz/tq?sheet=veri&_=${Date.now()}`;
+    const response = await fetch(SHEET_URL, { signal: AbortSignal.timeout(6000) });
+    if (response.ok) {
+      const text = await response.text();
+      const s = text.indexOf('{');
+      const e = text.lastIndexOf('}');
+      if (s !== -1 && e !== -1) {
+        const json = JSON.parse(text.substring(s, e + 1));
+        const items: string[] = [];
+        if (json?.table?.rows) {
+          json.table.rows.forEach((r: any) => {
+            const val = r.c && r.c[6] && r.c[6].v;
+            if (val) {
+              const str = String(val).trim();
+              if (
+                str &&
+                !items.includes(str) &&
+                str.toUpperCase() !== 'SİSTEMLER' &&
+                str.toUpperCase() !== 'SISTEMLER'
+              ) {
+                items.push(str);
+              }
+            }
+          });
+        }
+        if (items.length > 0) {
+          const result = { success: true, count: items.length, systems: items };
+          setSheetCache(cacheKey, result, 120000); // 2 minute cache
+          return res.json(result);
+        }
+      }
+    }
+  } catch (err: any) {
+    console.warn('Failed to fetch veri systems on server:', err.message);
+  }
+  return res.json({ success: true, count: 0, systems: [] });
+});
+
 
 
 // High-speed in-memory cache for Google Sheet queries (eliminates repeated 3-10s round-trips)
